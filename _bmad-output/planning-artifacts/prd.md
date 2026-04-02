@@ -27,6 +27,10 @@ classification:
   domain: general
   complexity: low
   projectContext: greenfield
+lastEdited: '2026-04-02'
+editHistory:
+  - date: '2026-04-02'
+    changes: 'Post-validation refinement: tightened 6 measurability violations (FR11, FR20, FR24, NFR bundle size, reliability, maintainability), replaced 1 density anti-pattern, added conceptual data model'
 ---
 
 # Product Requirements Document - bmad-todo-app
@@ -161,7 +165,7 @@ Alex is a freelance designer juggling multiple small projects. They've tried Tod
   - Strikethrough or muted styling for completed items.
   - Enter key submits a new todo from the input field.
   - Clear affordances for delete actions (no hidden gestures required).
-- These conventions reduce cognitive load and leverage existing muscle memory from tools like Todoist, Apple Reminders, and Google Tasks.
+- These conventions reduce cognitive load and use existing muscle memory from tools like Todoist, Apple Reminders, and Google Tasks.
 
 ## Web Application Specific Requirements
 
@@ -226,6 +230,10 @@ bmad-todo-app is a Single Page Application (SPA) with a backend REST API. The fr
 - Synchronous data flow — wait for API confirmation before updating UI state.
 - Dockerized deployment (frontend + backend + database via Docker Compose).
 
+### Conceptual Data Model
+
+A todo item consists of: a unique identifier, a text description (non-empty), a completion status (active or completed), and a creation timestamp. V1 has no user association — all todos belong to a single implicit user. The schema must support adding a user foreign key in Phase 2 without migrating existing records.
+
 ### Data Flow Decision
 
 V1 uses **synchronous (wait-for-response) updates** rather than optimistic UI updates. User actions trigger an API call; the UI updates only after the server confirms success. This simplifies error handling, eliminates rollback logic, and is appropriate for a solo-developer project where API latency is expected to be low (<200ms). Optimistic updates can be introduced in a future phase if needed.
@@ -280,7 +288,7 @@ V1 uses **synchronous (wait-for-response) updates** rather than optimistic UI up
 ### Input Validation & Error Handling
 
 - FR10: System prevents creation of a todo with an empty or whitespace-only description.
-- FR11: System displays a clear error message when a network request fails.
+- FR11: System displays a user-visible error message identifying the failed action when a network request fails.
 - FR12: System preserves the visible todo list and user context when an error occurs.
 - FR13: System displays a loading state while data is being fetched from the server.
 - FR14: System displays an empty state message when no todos exist.
@@ -295,14 +303,14 @@ V1 uses **synchronous (wait-for-response) updates** rather than optimistic UI up
 
 - FR18: User can perform all actions (create, complete, uncomplete, delete, filter, sort) using only a keyboard.
 - FR19: System provides screen reader-compatible markup for all interactive elements and state changes.
-- FR20: System manages focus logically after state-changing actions (e.g., after deleting a todo, focus moves to a sensible next element).
+- FR20: System moves focus to the next item in the list after state-changing actions, or to the input field if the list is empty (e.g., after deleting a todo, focus moves to the adjacent todo or the creation input).
 - FR21: All text and interactive elements meet WCAG 2.1 AA color contrast requirements.
 - FR22: All touch targets meet minimum size requirements for mobile interaction (44x44px).
 
 ### Responsive Design
 
 - FR23: User can access and use all features on screen widths from 320px (mobile) to desktop.
-- FR24: System adapts layout and interaction targets appropriately across device sizes without horizontal scrolling.
+- FR24: System adapts layout and interaction targets across device sizes without horizontal scrolling, overlapping elements, or truncated interactive content.
 
 ### Deployment
 
@@ -316,7 +324,7 @@ V1 uses **synchronous (wait-for-response) updates** rather than optimistic UI up
 - API response time for all CRUD endpoints: < 200ms at p95 under normal load.
 - UI feedback on user actions (button state, loading indicators): < 100ms.
 - Initial page load to interactive state: < 2 seconds on standard broadband.
-- Client-side bundle size should remain minimal — no unnecessary framework overhead for a CRUD application.
+- Client-side JavaScript bundle size: < 200KB gzipped. No unnecessary framework overhead for a CRUD application.
 
 ### Security
 
@@ -339,11 +347,11 @@ V1 uses **synchronous (wait-for-response) updates** rather than optimistic UI up
 
 - Zero data loss on page refresh, browser restart, or container restart.
 - Database writes must be durable — confirmed writes must survive process crashes.
-- The application must degrade gracefully on network failure: existing data remains visible, errors are communicated clearly, no silent data corruption.
+- On network failure, the application must: keep existing data visible, display an error message identifying the failure, and prevent silent data corruption.
 
 ### Maintainability
 
-- Codebase must be structured for readability by a single developer or a future team.
-- Clear separation between frontend and backend with a well-defined API contract.
+- Codebase must follow consistent naming conventions, file organization, and code formatting enforceable by a linter.
+- Frontend and backend must communicate exclusively through a documented REST API contract with no shared runtime dependencies.
 - Architecture must allow adding authentication and multi-user support without rearchitecting existing components.
 - Docker Compose setup must be reproducible — any developer can clone, build, and run with a single command.

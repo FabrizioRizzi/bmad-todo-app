@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bmad-todo-app — Final Design Direction v4</title>
+<style>
+  :root {
+    --bg: #F5F0EB;
+    --surface: #FAFAF7;
+    --text-primary: #2C2825;
+    --text-secondary: #8A8279;
+    --text-completed: #B5AFA8;
+    --accent: #C4654A;
+    --accent-hover: #A8523B;
+    --accent-subtle: #F5E6E1;
+    --border: #DDD6CE;
+    --success: #6B8F71;
+    --success-subtle: #EEF4EF;
+    --error: #C45A4A;
+    --error-bg: #F5E1DF;
+    --toast-bg: #3D3835;
+    --toast-text: #FAFAF7;
+    --active-bar: #D9A193;
+    --active-bg: #FBF9F7;
+    --completed-bar: #D4CEC7;
+    --completed-bg: #F3EFEA;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: #1a1816;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  .page-header {
+    background: var(--bg);
+    padding: 40px 24px 20px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header h1 { font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+  .page-header p { font-size: 14px; color: var(--text-secondary); max-width: 520px; margin: 0 auto; }
+
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--toast-bg); padding: 10px 24px;
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+  }
+  .nav button {
+    font-family: var(--font); font-size: 13px; font-weight: 500;
+    padding: 8px 16px; border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px; background: transparent; color: var(--toast-text);
+    cursor: pointer; white-space: nowrap; transition: all 0.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,0.1); }
+  .nav button.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .view { display: none; padding: 32px 16px 64px; min-height: 100vh; background: var(--bg); }
+  .view.active { display: block; }
+
+  .view-label { text-align: center; margin-bottom: 24px; }
+  .view-label h2 { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+  .view-label p { font-size: 13px; color: var(--text-secondary); }
+
+  /* ===================== MOCKUP FRAME ===================== */
+  .mockup-frame {
+    max-width: 640px; margin: 0 auto 40px;
+    background: var(--bg); border-radius: 20px;
+    box-shadow: 0 1px 3px rgba(44,40,37,0.06), 0 8px 24px rgba(44,40,37,0.08);
+    overflow: hidden;
+  }
+
+  /* ===================== APP HEADER ===================== */
+  .app-header {
+    padding: 28px 28px 18px; text-align: center;
+  }
+  .app-title { font-size: 22px; font-weight: 600; color: var(--text-primary); }
+  .app-count {
+    display: inline-block; margin-top: 6px;
+    font-size: 12px; font-weight: 500; color: var(--accent);
+    background: var(--accent-subtle); padding: 3px 12px; border-radius: 12px;
+  }
+
+  /* ===================== INPUT + ADD BUTTON ===================== */
+  .input-section {
+    padding: 0 28px 18px;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .input-field {
+    flex: 1; padding: 16px 18px; font-size: 16px; font-family: var(--font);
+    border: none; border-radius: 14px;
+    background: var(--surface); color: var(--text-primary); outline: none;
+    box-shadow: 0 1px 3px rgba(44,40,37,0.05);
+    transition: box-shadow 0.2s;
+  }
+  .input-field:focus {
+    box-shadow: 0 0 0 2px var(--accent), 0 2px 8px rgba(196,101,74,0.12);
+  }
+  .input-field::placeholder { color: var(--text-secondary); }
+
+  .add-btn {
+    width: 50px; height: 50px; border-radius: 14px; border: none;
+    background: var(--accent); color: white; cursor: pointer;
+    font-size: 22px; font-weight: 400; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 6px rgba(196,101,74,0.25);
+  }
+  .add-btn:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 3px 10px rgba(196,101,74,0.35);
+  }
+
+  /* ===================== FILTER TABS (full-width, D4 style) ===================== */
+  .filter-tabs {
+    display: flex; border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+  }
+  .filter-btn {
+    flex: 1; font-family: var(--font); font-size: 13px; font-weight: 600;
+    padding: 12px 0; border: none; cursor: pointer;
+    background: transparent; color: var(--text-secondary); transition: all 0.2s;
+    border-bottom: 2px solid transparent; text-align: center;
+  }
+  .filter-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .filter-btn:hover:not(.active) { color: var(--text-primary); }
+
+  /* ===================== SORT ROW (separate, below tabs) ===================== */
+  .sort-row {
+    display: flex; justify-content: flex-end; align-items: center;
+    padding: 12px 28px;
+    background: rgba(221,214,206,0.15);
+  }
+  .sort-label {
+    font-size: 11px; font-weight: 500; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-right: 6px;
+  }
+  .sort-options {
+    display: flex; gap: 4px; align-items: center;
+  }
+  .sort-btn {
+    font-family: var(--font); font-size: 12px; font-weight: 500;
+    color: var(--text-secondary); border: none; background: transparent;
+    cursor: pointer; padding: 4px 10px; border-radius: 6px;
+    display: flex; align-items: center; gap: 3px;
+    transition: all 0.2s;
+  }
+  .sort-btn:hover { background: var(--surface); color: var(--text-primary); }
+  .sort-btn.sort-active { font-weight: 600; color: var(--text-primary); background: var(--surface); }
+  .sort-divider {
+    width: 1px; height: 14px; background: var(--border); margin: 0 2px;
+  }
+
+  /* ===================== TODO LIST ===================== */
+  .todo-list { padding: 16px 28px 28px; display: flex; flex-direction: column; gap: 10px; }
+
+  .todo-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; border-radius: 12px;
+    background: var(--surface); transition: all 0.25s;
+    box-shadow: 0 1px 3px rgba(44,40,37,0.04);
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .todo-item:hover {
+    box-shadow: 0 2px 8px rgba(44,40,37,0.08);
+  }
+
+  /* Active card — warm white bg + soft terracotta left bar */
+  .todo-item.active-item {
+    background: var(--active-bg);
+    border-left: 3px solid var(--active-bar);
+  }
+
+  /* Completed card — slightly dimmed bg + muted left bar */
+  .todo-item.completed-item {
+    background: var(--completed-bg);
+    border-left: 3px solid var(--completed-bar);
+    border-color: var(--border);
+    border-left-color: var(--completed-bar);
+    box-shadow: none;
+  }
+  .todo-item.completed-item:hover {
+    box-shadow: 0 1px 4px rgba(44,40,37,0.06);
+  }
+
+  .checkbox {
+    width: 24px; height: 24px; border-radius: 8px;
+    border: 2px solid var(--border); background: var(--bg);
+    cursor: pointer; transition: all 0.25s; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .checkbox:hover { border-color: var(--success); }
+  .checkbox.checked { background: var(--success); border-color: var(--success); }
+  .checkbox.checked::after { content: "✓"; color: white; font-size: 14px; font-weight: 700; }
+
+  .todo-content { flex: 1; min-width: 0; }
+  .todo-text { font-size: 16px; color: var(--text-primary); }
+  .todo-text.completed { color: var(--text-completed); text-decoration: line-through; }
+
+  .todo-meta {
+    font-size: 11px; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0;
+  }
+
+  .delete-btn {
+    opacity: 0; width: 30px; height: 30px; border-radius: 8px; border: none;
+    background: transparent; color: var(--text-secondary); cursor: pointer;
+    font-size: 15px; transition: all 0.2s; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .todo-item:hover .delete-btn { opacity: 1; }
+  .delete-btn:hover { background: var(--error-bg); color: var(--error); }
+
+  /* ===================== STATES ===================== */
+  .states-grid {
+    max-width: 640px; margin: 0 auto; padding: 0 16px 48px;
+    display: grid; gap: 24px;
+  }
+  .state-card {
+    background: var(--surface); border-radius: 14px; padding: 24px;
+    box-shadow: 0 1px 3px rgba(44,40,37,0.05);
+  }
+  .state-card h3 { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px; }
+
+  .empty-state { text-align: center; padding: 28px 16px; }
+  .empty-state .icon { font-size: 36px; margin-bottom: 10px; opacity: 0.5; }
+  .empty-state .msg { font-size: 16px; color: var(--text-primary); margin-bottom: 4px; }
+  .empty-state .hint { font-size: 14px; color: var(--text-secondary); }
+
+  .error-banner {
+    padding: 12px 16px; border-radius: 10px;
+    background: var(--error-bg); color: var(--error);
+    font-size: 14px; display: flex; align-items: center; gap: 8px;
+  }
+
+  .loading-skeleton { display: flex; flex-direction: column; gap: 10px; }
+  .skel-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; border-radius: 12px; background: var(--bg);
+  }
+  .skel-circle {
+    width: 24px; height: 24px; border-radius: 8px; background: var(--border);
+    animation: pulse 1.5s ease-in-out infinite; flex-shrink: 0;
+  }
+  .skel-line {
+    height: 14px; border-radius: 4px; background: var(--border);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  .skel-line.w70 { width: 70%; }
+  .skel-line.w50 { width: 50%; }
+  .skel-line.w85 { width: 85%; }
+  @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 0.25; } }
+
+  .toast-demo {
+    display: inline-flex; align-items: center; gap: 14px;
+    background: var(--toast-bg); color: var(--toast-text);
+    padding: 14px 20px; border-radius: 12px; font-size: 14px;
+    box-shadow: 0 4px 16px rgba(44,40,37,0.25);
+  }
+  .toast-demo .undo {
+    color: var(--accent); font-weight: 600; cursor: pointer;
+    text-decoration: underline; text-underline-offset: 2px;
+  }
+
+  /* ===================== MOBILE ===================== */
+  .mobile-frame {
+    max-width: 375px; margin: 0 auto 40px;
+    background: var(--bg); border-radius: 20px;
+    box-shadow: 0 1px 3px rgba(44,40,37,0.06), 0 8px 24px rgba(44,40,37,0.08);
+    overflow: hidden;
+  }
+  .mobile-frame .app-header { padding: 24px 20px 14px; }
+  .mobile-frame .input-section { padding: 0 20px 14px; gap: 8px; }
+  .mobile-frame .input-field { padding: 14px 16px; border-radius: 12px; }
+  .mobile-frame .add-btn { width: 46px; height: 46px; border-radius: 12px; font-size: 20px; }
+  .mobile-frame .filter-tabs { padding: 0 20px; }
+  .mobile-frame .sort-row { padding: 10px 20px; }
+  .mobile-frame .todo-list { padding: 12px 20px 24px; gap: 8px; }
+  .mobile-frame .todo-item { padding: 12px 14px; border-radius: 10px; }
+  .mobile-frame .delete-btn { opacity: 0.5; }
+
+  /* ===================== LEGEND ===================== */
+  .legend {
+    max-width: 640px; margin: 0 auto 32px; padding: 0 16px;
+  }
+  .legend-card {
+    background: var(--surface); border-radius: 14px; padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(44,40,37,0.05);
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-secondary);
+  }
+  .legend-swatch {
+    width: 32px; height: 22px; border-radius: 6px; flex-shrink: 0;
+  }
+  .legend-swatch.active-swatch {
+    background: var(--active-bg); border-left: 3px solid var(--active-bar);
+    box-shadow: 0 1px 3px rgba(44,40,37,0.04);
+  }
+  .legend-swatch.completed-swatch {
+    background: var(--completed-bg); border-left: 3px solid var(--completed-bar);
+  }
+
+  /* ===================== COMPARISON ===================== */
+  .comparison {
+    max-width: 640px; margin: 0 auto 40px; padding: 0 16px;
+  }
+  .comparison h3 {
+    font-size: 13px; font-weight: 600; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px;
+    text-align: center;
+  }
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .compare-card {
+    border-radius: 12px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .compare-card.is-active {
+    background: var(--active-bg);
+    border-left: 3px solid var(--active-bar);
+    box-shadow: 0 1px 3px rgba(44,40,37,0.04);
+  }
+  .compare-card.is-completed {
+    background: var(--completed-bg);
+    border-left: 3px solid var(--completed-bar);
+  }
+  .compare-card .c-checkbox {
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 2px solid var(--border); background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .compare-card.is-completed .c-checkbox {
+    background: var(--success); border-color: var(--success);
+  }
+  .compare-card.is-completed .c-checkbox::after {
+    content: "✓"; color: white; font-size: 11px; font-weight: 700;
+  }
+  .compare-card .c-text { font-size: 14px; }
+  .compare-card.is-active .c-text { color: var(--text-primary); }
+  .compare-card.is-completed .c-text { color: var(--text-completed); text-decoration: line-through; }
+
+  @media (max-width: 480px) {
+    .delete-btn { opacity: 0.5 !important; }
+    .mockup-frame, .mobile-frame { border-radius: 0; margin-left: -16px; margin-right: -16px; }
+    .compare-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>bmad-todo-app — Final Direction v4</h1>
+  <p>Soft Elevated + D4 tab filters + sort by date/status + Add button + bordered cards + smooth active/completed distinction</p>
+</div>
+
+<div class="nav" id="nav">
+  <button class="active" data-view="desktop">Desktop</button>
+  <button data-view="mobile">Mobile</button>
+  <button data-view="active-filter">Active Filter</button>
+  <button data-view="completed-filter">Completed Filter</button>
+  <button data-view="states">UI States</button>
+  <button data-view="hover">Hover & Focus</button>
+</div>
+
+<!-- ==================== DESKTOP ==================== -->
+<div class="view active" id="desktop">
+  <div class="view-label">
+    <h2>Desktop — All Tasks</h2>
+    <p>Add button beside input, full-width tab filters, sort on its own row, active/completed visual distinction</p>
+  </div>
+
+  <div class="legend">
+    <div class="legend-card">
+      <div class="legend-item">
+        <div class="legend-swatch active-swatch"></div>
+        <span>Active — warm white card + soft terracotta left bar</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch completed-swatch"></div>
+        <span>Completed — muted stone card + soft gray left bar + strikethrough</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup-frame">
+    <div class="app-header">
+      <div class="app-title">My Tasks</div>
+      <div class="app-count">3 remaining</div>
+    </div>
+    <div class="input-section">
+      <input type="text" class="input-field" placeholder="Add a new task..." readonly>
+      <button class="add-btn" title="Add task">+</button>
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-btn active">All</button>
+      <button class="filter-btn">Active</button>
+      <button class="filter-btn">Completed</button>
+    </div>
+    <div class="sort-row">
+      <span class="sort-label">Sort by</span>
+      <div class="sort-options">
+        <button class="sort-btn sort-active">Date ↓</button>
+        <div class="sort-divider"></div>
+        <button class="sort-btn">Status ↕</button>
+      </div>
+    </div>
+    <div class="todo-list">
+      <div class="todo-item active-item">
+        <div class="checkbox"></div>
+        <div class="todo-content"><div class="todo-text">Send invoice to client</div></div>
+        <span class="todo-meta">Today</span>
+        <button class="delete-btn">✕</button>
+      </div>
+      <div class="todo-item active-item">
+        <div class="checkbox"></div>
+        <div class="todo-content"><div class="todo-text">Review logo drafts</div></div>
+        <span class="todo-meta">Today</span>
+        <button class="delete-btn">✕</button>
+      </div>
+      <div class="todo-item active-item">
+        <div class="checkbox"></div>
+        <div class="todo-content"><div class="todo-text">Prepare mood board for presentation</div></div>
+        <span class="todo-meta">Yesterday</span>
+        <button class="delete-btn">✕</button>
+      </div>
+      <div class="todo-item completed-item">
+        <div class="checkbox checked"></div>
+        <div class="todo-content"><div class="todo-text completed">Buy printer ink</div></div>
+        <span class="todo-meta">Yesterday</span>
+        <button class="delete-btn">✕</button>
+      </div>
+      <div class="todo-item completed-item">
+        <div class="checkbox checked"></div>
+        <div class="todo-content"><div class="todo-text completed">Schedule call with Sarah</div></div>
+        <span class="todo-meta">Apr 1</span>
+        <button class="delete-btn">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MOBILE ==================== -->
+<div class="view" id="mobile">
+  <div class="view-label">
+    <h2>Mobile — 375px</h2>
+    <p>Same structure, tighter spacing, visible delete, touch-ready add button</p>
+  </div>
+  <div class="mobile-frame">
+    <div class="app-header">
+      <div class="app-title">My Tasks</div>
+      <div class="app-count">3 remaining</div>
+    </div>
+    <div class="input-section">
+      <input type="text" class="input-field" placeholder="Add a new task..." readonly>
+      <button class="add-btn" title="Add task">+</button>
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-btn active">All</button>
+      <button class="filter-btn">Active</button>
+      <button class="filter-btn">Completed</button>
+    </div>
+    <div class="sort-row">
+      <span class="sort-label">Sort by</span>
+      <div class="sort-options">
+        <button class="sort-btn sort-active">Date ↓</button>
+        <div class="sort-divider"></div>
+        <button class="sort-btn">Status ↕</button>
+      </div>
+    </div>
+    <div class="todo-list">
+      <div class="todo-item active-item">
+        <div class="checkbox"></div>
+        <div class="todo-content"><div class="todo-text">Send invoice to client</div></div>
+        <span class="todo-meta">Today</span>
+        <button class="delete-btn" style="opacity:0.5">✕</button>
+      </div>
+      <div class="todo-item active-item">
+        <div class="checkbox"></div>
+        <div class="todo-content"><div class="todo-text">Review logo drafts</div></div>
+        <span class="todo-meta">Today</span>
+        <button class="delete-btn" style="opacity:0.5">✕</button>
+      </div>
+      <div class="todo-item active-item">
+        <div class="checkbox"></div>
+        <div class="todo-content"><div class="todo-text">Prepare mood board</div></div>
+        <span class="todo-meta">Yesterday</span>
+        <button class="delete-btn" style="opacity:0.5">✕</button>
+      </div>
+      <div class="todo-item completed-item">
+        <div class="checkbox checked"></div>
+        <div class="todo-content"><div class="todo-text completed">Buy printer ink</div></div>
+        <span class="todo-meta">Yesterday</span>
+        <button class="delete-btn" style="opacity:0.5">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ACTIVE FILTER ==================== -->
+<div class="view" id="active-filter">
+  <div class="view-label">
+    <h2>Active Filter</h2>
+    <p>Only active items shown — all cards have the terracotta left bar</p>
+  </div>
+  <div class="mockup-frame">
+    <div class="app-header">
+      <div class="app-title">My Tasks</div>
+      <div class="app-count">3 remaining</div>
+    </div>
+    <div class="input-section">
+      <input type="text" class="input-field" placeholder="Add a new task..." readonly>
+      <button class="add-btn" title="Add task">+</button>
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-btn">All</button>
+      <button class="filter-btn active">Active</button>
+      <button class="filter-btn">Completed</button>
+    </div>
+    <div class="sort-row">
+      <span class="sort-label">Sort by</span>
+      <div class="sort-options">
+        <button class="sort-btn sort-active">Date ↓</button>
+      </div>
+    </div>
+    <div class="todo-list">
+      <div class="todo-item active-item">
+        <div class="checkbox"></div>
+        <div class="todo-content"><div class="todo-text">Send invoice to client</div></div>
+        <span class="todo-meta">Today</span>
+        <button class="delete-btn">✕</button>
+      </div>
+      <div class="todo-item active-item">
+        <div class="checkbox"></div>
+        <div class="todo-content"><div class="todo-text">Review logo drafts</div></div>
+        <span class="todo-meta">Today</span>
+        <button class="delete-btn">✕</button>
+      </div>
+      <div class="todo-item active-item">
+        <div class="checkbox"></div>
+        <div class="todo-content"><div class="todo-text">Prepare mood board for presentation</div></div>
+        <span class="todo-meta">Yesterday</span>
+        <button class="delete-btn">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== COMPLETED FILTER ==================== -->
+<div class="view" id="completed-filter">
+  <div class="view-label">
+    <h2>Completed Filter</h2>
+    <p>Only completed items — dimmed cards, no left bar, strikethrough text</p>
+  </div>
+  <div class="mockup-frame">
+    <div class="app-header">
+      <div class="app-title">My Tasks</div>
+      <div class="app-count">3 remaining</div>
+    </div>
+    <div class="input-section">
+      <input type="text" class="input-field" placeholder="Add a new task..." readonly>
+      <button class="add-btn" title="Add task">+</button>
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-btn">All</button>
+      <button class="filter-btn">Active</button>
+      <button class="filter-btn active">Completed</button>
+    </div>
+    <div class="sort-row">
+      <span class="sort-label">Sort by</span>
+      <div class="sort-options">
+        <button class="sort-btn sort-active">Date ↓</button>
+      </div>
+    </div>
+    <div class="todo-list">
+      <div class="todo-item completed-item">
+        <div class="checkbox checked"></div>
+        <div class="todo-content"><div class="todo-text completed">Buy printer ink</div></div>
+        <span class="todo-meta">Yesterday</span>
+        <button class="delete-btn">✕</button>
+      </div>
+      <div class="todo-item completed-item">
+        <div class="checkbox checked"></div>
+        <div class="todo-content"><div class="todo-text completed">Schedule call with Sarah</div></div>
+        <span class="todo-meta">Apr 1</span>
+        <button class="delete-btn">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== UI STATES ==================== -->
+<div class="view" id="states">
+  <div class="view-label">
+    <h2>UI States</h2>
+    <p>Every edge case designed with the final direction's aesthetic</p>
+  </div>
+  <div class="states-grid">
+    <div class="state-card">
+      <h3>Empty State — First Visit</h3>
+      <div class="empty-state">
+        <div class="icon">☑</div>
+        <div class="msg">No tasks yet</div>
+        <div class="hint">Type above and press Enter (or tap +) to add your first task.</div>
+      </div>
+    </div>
+    <div class="state-card">
+      <h3>Loading — Skeleton Cards</h3>
+      <div class="loading-skeleton">
+        <div class="skel-card"><div class="skel-circle"></div><div class="skel-line w85"></div></div>
+        <div class="skel-card"><div class="skel-circle"></div><div class="skel-line w70"></div></div>
+        <div class="skel-card"><div class="skel-circle"></div><div class="skel-line w50"></div></div>
+      </div>
+    </div>
+    <div class="state-card">
+      <h3>Error — Action Failed</h3>
+      <div class="error-banner">
+        <span>⚠</span>
+        <span>Couldn't save that task — check your connection and try again.</span>
+      </div>
+    </div>
+    <div class="state-card">
+      <h3>Undo Toast — After Delete</h3>
+      <div style="display:flex;justify-content:center;padding:12px 0;">
+        <div class="toast-demo">
+          <span>Task deleted</span>
+          <span class="undo">Undo</span>
+        </div>
+      </div>
+    </div>
+    <div class="state-card">
+      <h3>Filtered Empty — No Completed Tasks</h3>
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <div class="msg">No completed tasks</div>
+        <div class="hint">Tasks you complete will appear here.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== HOVER & FOCUS ==================== -->
+<div class="view" id="hover">
+  <div class="view-label">
+    <h2>Hover & Focus States</h2>
+    <p>Interactive feedback on all elements</p>
+  </div>
+  <div class="mockup-frame">
+    <div class="app-header">
+      <div class="app-title">My Tasks</div>
+      <div class="app-count">3 remaining</div>
+    </div>
+    <div class="input-section">
+      <input type="text" class="input-field" placeholder="Add a new task..." style="box-shadow: 0 0 0 2px #C4654A, 0 2px 8px rgba(196,101,74,0.12);" readonly>
+      <button class="add-btn" style="background: var(--accent-hover); box-shadow: 0 3px 10px rgba(196,101,74,0.35);" title="Add task">+</button>
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-btn active">All</button>
+      <button class="filter-btn">Active</button>
+      <button class="filter-btn">Completed</button>
+    </div>
+    <div class="sort-row">
+      <span class="sort-label">Sort by</span>
+      <div class="sort-options">
+        <button class="sort-btn sort-active" style="background: var(--surface);">Date ↓</button>
+        <div class="sort-divider"></div>
+        <button class="sort-btn">Status ↕</button>
+      </div>
+    </div>
+    <div class="todo-list">
+      <div class="todo-item active-item" style="box-shadow: 0 2px 8px rgba(44,40,37,0.08);">
+        <div class="checkbox" style="border-color: var(--success);"></div>
+        <div class="todo-content"><div class="todo-text">Send invoice to client</div></div>
+        <span class="todo-meta">Today</span>
+        <button class="delete-btn" style="opacity:1;">✕</button>
+      </div>
+      <div class="todo-item active-item">
+        <div class="checkbox"></div>
+        <div class="todo-content"><div class="todo-text">Review logo drafts</div></div>
+        <span class="todo-meta">Today</span>
+        <button class="delete-btn">✕</button>
+      </div>
+      <div class="todo-item completed-item">
+        <div class="checkbox checked"></div>
+        <div class="todo-content"><div class="todo-text completed">Buy printer ink</div></div>
+        <span class="todo-meta">Yesterday</span>
+        <button class="delete-btn">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="comparison">
+    <h3>Active vs Completed — Side by Side</h3>
+    <div class="compare-grid">
+      <div class="compare-card is-active">
+        <div class="c-checkbox"></div>
+        <div class="c-text">Active task</div>
+      </div>
+      <div class="compare-card is-completed">
+        <div class="c-checkbox"></div>
+        <div class="c-text">Completed task</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:640px;margin:0 auto;padding:0 16px;">
+    <div style="background:var(--surface);border-radius:14px;padding:20px 24px;box-shadow:0 1px 3px rgba(44,40,37,0.05);">
+      <h3 style="font-size:13px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">Interaction Summary</h3>
+      <div style="font-size:14px;color:var(--text-primary);line-height:2;">
+        <strong>Input focused:</strong> Terracotta ring (2px) + soft glow<br>
+        <strong>Add button hovered:</strong> Darker terracotta + deeper shadow<br>
+        <strong>Active card:</strong> Warm white + soft terracotta left bar + subtle elevation<br>
+        <strong>Completed card:</strong> Muted stone + soft gray left bar + no shadow<br>
+        <strong>Card hovered:</strong> Elevated shadow + delete button fades in<br>
+        <strong>Checkbox hovered:</strong> Border shifts to sage green<br>
+        <strong>Checkbox checked:</strong> Filled sage green + white checkmark<br>
+        <strong>Delete hovered:</strong> Soft red background + red icon<br>
+        <strong>Filter tab active:</strong> Terracotta text + underline<br>
+        <strong>Sort hovered:</strong> Subtle surface background
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const nav = document.getElementById('nav');
+  const buttons = nav.querySelectorAll('button');
+  const views = document.querySelectorAll('.view');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.dataset.view;
+      views.forEach(v => v.classList.toggle('active', v.id === target));
+    });
+  });
+</script>
+</body>
+</html>

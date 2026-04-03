@@ -29,7 +29,8 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 Key architectural implications from FRs:
 - FR7-9 (Due Dates): Optional due date per todo, settable at creation or later, with overdue visual indicator for active past-due items.
 - FR10-12 (Filtering & Sorting): Client-side filtering and sorting on a server-fetched dataset (sort by due date and status only — creation date is stored but not exposed in UI). No server-side pagination needed for V1 (single user, bounded list size).
-- FR18-20 (Data Persistence): All state changes confirmed by server before UI update — the frontend must manage loading/pending states for every mutation.
+- FR18-19 (Persistence): REST API + database; todos load on app open and survive refresh (TanStack Query cache reflects server truth after each successful mutation).
+- FR20 (Data flow): Create, completion toggle, and due-date changes update the UI only after the server confirms success (pending/loading states per mutation). **Delete** is the exception: the card may leave the list immediately while an undo window runs; `DELETE` runs only after undo expires, with UI restore on failure — see undo-delete pattern below.
 - FR21-25 (Accessibility): Pervasive — affects component selection, HTML semantics, focus management, and testing strategy. Not a bolt-on concern.
 - FR28-29 (Deployment): Docker Compose with three services and data persistence across restarts.
 
@@ -624,7 +625,7 @@ Single integration boundary: frontend ↔ backend via `GET/POST/PATCH/DELETE /ap
 | FR7-9 (Due Dates) | `add-input` (calendar btn), `todo-card` (due badge), `use-update-due-date` | `todo-routes.ts` (PATCH), `todo-schemas.ts` |
 | FR10-12 (Filter/Sort) | `filter-tabs`, `sort-row`, `app.tsx` (client-side logic) | — (client-side only) |
 | FR13-17 (Validation/Errors) | `add-input` (empty check), `error-banner` | `todo-schemas.ts`, `error-handler.ts` |
-| FR18-20 (Persistence) | `use-todos` (useQuery), `lib/api.ts` | `db.ts`, `todo-routes.ts`, `todos.ts` |
+| FR18-20 (Persistence / data flow) | `use-todos` (useQuery), `lib/api.ts`, mutations incl. delete+undo (`use-delete-todo`) | `db.ts`, `todo-routes.ts`, `todos.ts` |
 | FR21-25 (Accessibility) | All components (semantic HTML, ARIA, focus management) | — |
 | FR26-27 (Responsive) | `styles/globals.css`, all components (Tailwind responsive) | — |
 | FR28-29 (Deployment) | `Dockerfile`, `nginx.conf` | `Dockerfile`, `docker-compose.yml` |
@@ -691,7 +692,7 @@ User interaction
 | FR7-9 | Due Dates | Nullable `dueDate` column + PATCH route + Calendar/Popover components + `todo-card` badge |
 | FR10-12 | Filter/Sort | `filter-tabs` + `sort-row` + `app.tsx` client-side logic |
 | FR13-17 | Validation/Errors | Zod schemas + `error-handler.ts` + `error-banner` + `add-input` client check + skeleton/empty states |
-| FR18-20 | Persistence | Drizzle → PostgreSQL + synchronous data flow + TanStack Query cache |
+| FR18-20 | Persistence / data flow | Drizzle → PostgreSQL + TanStack Query; server-first UI for create/toggle/due date; undo-deferred DELETE per FR20 / PRD Data Flow Decision |
 | FR21-25 | Accessibility | Radix primitives (ARIA built-in), semantic HTML, focus management, design tokens for contrast |
 | FR26-27 | Responsive | Tailwind responsive utilities, 44px touch targets, `globals.css` |
 | FR28-29 | Deployment | `docker-compose.yml` + named volume + multi-stage Dockerfiles |

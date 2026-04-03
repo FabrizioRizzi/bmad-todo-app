@@ -27,8 +27,10 @@ classification:
   domain: general
   complexity: low
   projectContext: greenfield
-lastEdited: '2026-04-02'
+lastEdited: '2026-04-03'
 editHistory:
+  - date: '2026-04-03'
+    changes: 'Aligned FR20 and Data Flow with UX delete+undo: server-first UI for create/toggle/due-date; delete may optimistically leave the list with undo window before permanent DELETE. MVP synchronous-flow bullet updated accordingly.'
   - date: '2026-04-03'
     changes: 'Added due date feature to V1 scope: 3 new FRs (FR7-FR9 due dates), sort by due date (FR11). Removed creation date from frontend display and sort options. Data model keeps createdAt in DB but not shown in UI. Renumbered to FR1-FR29.'
   - date: '2026-04-02'
@@ -232,7 +234,7 @@ bmad-todo-app is a Single Page Application (SPA) with a backend REST API. The fr
 - Empty state, loading state, and error state handling.
 - WCAG 2.1 AA accessibility (keyboard nav, screen reader, contrast).
 - Input validation (prevent empty todos).
-- Synchronous data flow — wait for API confirmation before updating UI state.
+- Synchronous data flow for create, completion toggle, and due-date changes — wait for API confirmation before updating UI state; delete uses the undo-deferred pattern (see Data Flow Decision).
 - Dockerized deployment (frontend + backend + database via Docker Compose).
 
 ### Conceptual Data Model
@@ -241,7 +243,9 @@ A todo item consists of: a unique identifier, a text description (non-empty), a 
 
 ### Data Flow Decision
 
-V1 uses **synchronous (wait-for-response) updates** rather than optimistic UI updates. User actions trigger an API call; the UI updates only after the server confirms success. This simplifies error handling, eliminates rollback logic, and is appropriate for a solo-developer project where API latency is expected to be low (<200ms). Optimistic updates can be introduced in a future phase if needed.
+V1 uses **synchronous (wait-for-response) updates** for **create**, **completion toggle**, and **due-date changes**: the UI reflects those changes only after the server confirms success. This simplifies error handling, avoids rollback for those actions, and fits expected API latency (<200ms).
+
+**Exception — delete with undo:** When the user deletes a todo, the UX removes the card from the list immediately and shows an undo window. The server does not permanently remove the row until the undo timer expires and `DELETE` succeeds; if the user chooses Undo, the list is restored without calling `DELETE`. If `DELETE` fails after the window, the UI restores the item and shows an error. This single optimistic pattern is required by the UX spec; broader optimistic updates for other actions remain **post-MVP** (see Phase 2).
 
 ### Post-MVP Features
 
@@ -308,7 +312,7 @@ V1 uses **synchronous (wait-for-response) updates** rather than optimistic UI up
 
 - FR18: System persists all todos to a backend database via REST API.
 - FR19: System retrieves and displays all persisted todos when the application is loaded.
-- FR20: All todo state changes (create, complete, uncomplete, delete, set/change due date) are confirmed by the server before the UI reflects the change.
+- FR20: For create, complete, uncomplete, and set/change due date, the server confirms success before the UI reflects the change. For delete, the UI may remove the item immediately when the user deletes (undo window); the todo is **permanently** removed only after the undo period ends and the server confirms `DELETE`. If `DELETE` fails, the UI restores the item.
 
 ### Accessibility
 

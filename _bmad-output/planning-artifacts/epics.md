@@ -41,7 +41,7 @@ This document provides the complete epic and story breakdown for bmad-todo-app, 
 - FR17: System displays an empty state message when no todos exist.
 - FR18: System persists all todos to a backend database via REST API.
 - FR19: System retrieves and displays all persisted todos when the application is loaded.
-- FR20: All todo state changes (create, complete, uncomplete, delete, set/change due date) are confirmed by the server before the UI reflects the change.
+- FR20: For create, complete, uncomplete, and set/change due date, the server confirms success before the UI reflects the change. For delete, the UI may remove the item immediately (undo window); permanent removal only after undo expires and server confirms DELETE; failed DELETE restores the item.
 - FR21: User can perform all actions (create, complete, uncomplete, delete, set due date, filter, sort) using only a keyboard.
 - FR22: System provides screen reader-compatible markup for all interactive elements and state changes.
 - FR23: System moves focus to the next item in the list after state-changing actions, or to the input field if the list is empty.
@@ -139,7 +139,7 @@ This document provides the complete epic and story breakdown for bmad-todo-app, 
 | FR17 | Epic 1 | Empty state when no todos |
 | FR18 | Epic 1 | Persist todos via REST API |
 | FR19 | Epic 1 | Retrieve todos on load |
-| FR20 | Epic 1 | Server confirms before UI update |
+| FR20 | Epic 1, Epic 2 | Sync UI for create/toggle/due date (Epic 1); delete + undo-deferred DELETE (Epic 2) |
 | FR21 | Epic 4 | Keyboard-only operation |
 | FR22 | Epic 4 | Screen reader markup |
 | FR23 | Epic 4 | Focus management after actions |
@@ -154,11 +154,11 @@ This document provides the complete epic and story breakdown for bmad-todo-app, 
 
 ### Epic 1: Project Foundation & First Todo
 The user can open the app and create their first todo — the "Hello World" moment. This epic scaffolds the entire monorepo, database, and API, then delivers the minimum viable interaction: type a task, press Enter, see it appear in a persistent list.
-**FRs covered:** FR1, FR2, FR13, FR16, FR17, FR18, FR19, FR20
+**FRs covered:** FR1, FR2, FR13, FR16, FR17, FR18, FR19, FR20 (sync create/load path; FR20 delete portion completed in Epic 2)
 
 ### Epic 2: Complete Task Lifecycle
 The user can manage their tasks through the full lifecycle — complete, uncomplete, delete with undo safety net, and see clear visual distinction between active and completed items. After this epic, Journey 1 and Journey 2 from the PRD are fully supported.
-**FRs covered:** FR3, FR4, FR5, FR6, FR14, FR15
+**FRs covered:** FR3, FR4, FR5, FR6, FR14, FR15, FR20 (delete + undo-deferred removal)
 
 ### Epic 3: Due Dates & Organization
 The user can set due dates, see overdue indicators, and organize their list through filtering and sorting. This transforms the app from a simple list into a real task management tool.
@@ -178,9 +178,11 @@ The user can open the app and create their first todo — the "Hello World" mome
 
 ### Story 1.1: Monorepo Scaffold & Tooling Setup
 
-As a developer,
-I want a fully configured pnpm workspace monorepo with TypeScript, Biome, and testing infrastructure,
-So that all future implementation has a consistent, quality-enforced foundation.
+As a user,
+I want the app to live in a single repo with shared TypeScript tooling, linting, and tests wired from day one,
+So that the product stays consistent and regressions are caught before they reach me.
+
+*(Foundation story — work is mostly technical setup; the benefit is reliability and speed of future delivery.)*
 
 **Acceptance Criteria:**
 
@@ -202,9 +204,11 @@ So that all future implementation has a consistent, quality-enforced foundation.
 
 ### Story 1.2: Backend API & Database Foundation
 
-As a developer,
-I want a running Fastify server with PostgreSQL database, Drizzle ORM, and the todos table,
-So that the API can persist and retrieve todo data.
+As a user,
+I want my todos stored in a proper database behind a secure, documented HTTP API,
+So that my list survives refreshes and the system can grow (e.g. accounts later) without rebuilding storage from scratch.
+
+*(Foundation story — delivers the persistence layer before the UI can show real data.)*
 
 **Acceptance Criteria:**
 
@@ -876,9 +880,11 @@ The app is containerized and deployable with a single command. Docker Compose or
 
 ### Story 5.1: Dockerize Frontend & Backend
 
-As a developer,
-I want multi-stage Dockerfiles for both the frontend and backend,
-So that each service can be built into a production-ready container image.
+As a user,
+I want the frontend and backend built into lean, production-ready container images,
+So that whoever runs the app gets the same artifacts every time — no drift between laptops or servers.
+
+*(Foundation story — packaging for repeatable deploys.)*
 
 **Acceptance Criteria:**
 
@@ -953,9 +959,11 @@ So that I can deploy and demonstrate the complete working product.
 
 ### Story 5.3: End-to-End Test Suite
 
-As a developer,
-I want a Playwright end-to-end test suite that verifies the full application works,
-So that I have confidence the deployed product functions correctly.
+As a user,
+I want the main journeys (add, complete, filter, due dates, errors) checked by automated browser tests against a real stack,
+So that releases are far less likely to ship broken basics.
+
+*(Foundation story — quality gate for ongoing changes.)*
 
 **Acceptance Criteria:**
 

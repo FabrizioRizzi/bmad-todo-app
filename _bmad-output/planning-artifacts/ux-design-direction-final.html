@@ -25,6 +25,9 @@
     --active-bg: #FBF9F7;
     --completed-bar: #D4CEC7;
     --completed-bg: #F3EFEA;
+    --overdue: #C45A4A;
+    --overdue-bg: #F9EDEB;
+    --overdue-bar: #C45A4A;
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 
@@ -177,6 +180,15 @@
     border-left: 3px solid var(--active-bar);
   }
 
+  /* Overdue active card — warm red tint bg + red left bar */
+  .todo-item.overdue-item {
+    background: var(--overdue-bg);
+    border-left: 3px solid var(--overdue-bar);
+  }
+  .todo-item.overdue-item:hover {
+    box-shadow: 0 2px 8px rgba(44,40,37,0.08);
+  }
+
   /* Completed card — slightly dimmed bg + muted left bar */
   .todo-item.completed-item {
     background: var(--completed-bg);
@@ -203,9 +215,21 @@
   .todo-text { font-size: 16px; color: var(--text-primary); }
   .todo-text.completed { color: var(--text-completed); text-decoration: line-through; }
 
-  .todo-meta {
-    font-size: 11px; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0;
+  .todo-due {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; color: var(--text-secondary); margin-top: 3px;
   }
+  .todo-due .due-icon { font-size: 11px; }
+  .todo-due.overdue { color: var(--overdue); font-weight: 500; }
+
+  .date-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: none;
+    background: transparent; color: var(--text-secondary); cursor: pointer;
+    font-size: 16px; flex-shrink: 0; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .date-btn:hover { background: var(--accent-subtle); color: var(--accent); }
+  .date-btn.has-date { color: var(--accent); font-size: 11px; font-weight: 500; font-family: var(--font); }
 
   .delete-btn {
     opacity: 0; width: 30px; height: 30px; border-radius: 8px; border: none;
@@ -306,6 +330,10 @@
   .legend-swatch.completed-swatch {
     background: var(--completed-bg); border-left: 3px solid var(--completed-bar);
   }
+  .legend-swatch.overdue-swatch {
+    background: var(--overdue-bg); border-left: 3px solid var(--overdue-bar);
+    box-shadow: 0 1px 3px rgba(44,40,37,0.04);
+  }
 
   /* ===================== COMPARISON ===================== */
   .comparison {
@@ -359,7 +387,7 @@
 
 <div class="page-header">
   <h1>bmad-todo-app — Final Direction v4</h1>
-  <p>Soft Elevated + D4 tab filters + sort by date/status + Add button + bordered cards + smooth active/completed distinction</p>
+  <p>Soft Elevated + D4 tab filters + sort by due date/status + Add button + due dates + overdue indicator + bordered cards</p>
 </div>
 
 <div class="nav" id="nav">
@@ -375,7 +403,7 @@
 <div class="view active" id="desktop">
   <div class="view-label">
     <h2>Desktop — All Tasks</h2>
-    <p>Add button beside input, full-width tab filters, sort on its own row, active/completed visual distinction</p>
+    <p>Add button + calendar beside input, full-width tab filters, sort by due date + status, due dates on cards, overdue indicator</p>
   </div>
 
   <div class="legend">
@@ -383,6 +411,10 @@
       <div class="legend-item">
         <div class="legend-swatch active-swatch"></div>
         <span>Active — warm white card + soft terracotta left bar</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch overdue-swatch"></div>
+        <span>Overdue — warm red tint card + red left bar + "Overdue" badge</span>
       </div>
       <div class="legend-item">
         <div class="legend-swatch completed-swatch"></div>
@@ -398,6 +430,7 @@
     </div>
     <div class="input-section">
       <input type="text" class="input-field" placeholder="Add a new task..." readonly>
+      <button class="date-btn" title="Set due date">📅</button>
       <button class="add-btn" title="Add task">+</button>
     </div>
     <div class="filter-tabs">
@@ -408,40 +441,48 @@
     <div class="sort-row">
       <span class="sort-label">Sort by</span>
       <div class="sort-options">
-        <button class="sort-btn sort-active">Date ↓</button>
+        <button class="sort-btn sort-active">Due ↓</button>
         <div class="sort-divider"></div>
         <button class="sort-btn">Status ↕</button>
       </div>
     </div>
     <div class="todo-list">
-      <div class="todo-item active-item">
+      <div class="todo-item overdue-item">
         <div class="checkbox"></div>
-        <div class="todo-content"><div class="todo-text">Send invoice to client</div></div>
-        <span class="todo-meta">Today</span>
+        <div class="todo-content">
+          <div class="todo-text">Send invoice to client</div>
+          <div class="todo-due overdue"><span class="due-icon">⚠</span> Overdue · Apr 1</div>
+        </div>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item active-item">
         <div class="checkbox"></div>
-        <div class="todo-content"><div class="todo-text">Review logo drafts</div></div>
-        <span class="todo-meta">Today</span>
+        <div class="todo-content">
+          <div class="todo-text">Review logo drafts</div>
+          <div class="todo-due"><span class="due-icon">📅</span> Tomorrow</div>
+        </div>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item active-item">
         <div class="checkbox"></div>
-        <div class="todo-content"><div class="todo-text">Prepare mood board for presentation</div></div>
-        <span class="todo-meta">Yesterday</span>
+        <div class="todo-content">
+          <div class="todo-text">Prepare mood board for presentation</div>
+        </div>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item completed-item">
         <div class="checkbox checked"></div>
-        <div class="todo-content"><div class="todo-text completed">Buy printer ink</div></div>
-        <span class="todo-meta">Yesterday</span>
+        <div class="todo-content">
+          <div class="todo-text completed">Buy printer ink</div>
+        </div>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item completed-item">
         <div class="checkbox checked"></div>
-        <div class="todo-content"><div class="todo-text completed">Schedule call with Sarah</div></div>
-        <span class="todo-meta">Apr 1</span>
+        <div class="todo-content">
+          <div class="todo-text completed">Schedule call with Sarah</div>
+          <div class="todo-due" style="text-decoration:line-through;opacity:0.6;"><span class="due-icon">📅</span> Apr 2</div>
+        </div>
         <button class="delete-btn">✕</button>
       </div>
     </div>
@@ -461,6 +502,7 @@
     </div>
     <div class="input-section">
       <input type="text" class="input-field" placeholder="Add a new task..." readonly>
+      <button class="date-btn" title="Set due date">📅</button>
       <button class="add-btn" title="Add task">+</button>
     </div>
     <div class="filter-tabs">
@@ -471,34 +513,36 @@
     <div class="sort-row">
       <span class="sort-label">Sort by</span>
       <div class="sort-options">
-        <button class="sort-btn sort-active">Date ↓</button>
+        <button class="sort-btn sort-active">Due ↓</button>
         <div class="sort-divider"></div>
         <button class="sort-btn">Status ↕</button>
       </div>
     </div>
     <div class="todo-list">
-      <div class="todo-item active-item">
+      <div class="todo-item overdue-item">
         <div class="checkbox"></div>
-        <div class="todo-content"><div class="todo-text">Send invoice to client</div></div>
-        <span class="todo-meta">Today</span>
+        <div class="todo-content">
+          <div class="todo-text">Send invoice to client</div>
+          <div class="todo-due overdue"><span class="due-icon">⚠</span> Overdue · Apr 1</div>
+        </div>
         <button class="delete-btn" style="opacity:0.5">✕</button>
       </div>
       <div class="todo-item active-item">
         <div class="checkbox"></div>
-        <div class="todo-content"><div class="todo-text">Review logo drafts</div></div>
-        <span class="todo-meta">Today</span>
+        <div class="todo-content">
+          <div class="todo-text">Review logo drafts</div>
+          <div class="todo-due"><span class="due-icon">📅</span> Tomorrow</div>
+        </div>
         <button class="delete-btn" style="opacity:0.5">✕</button>
       </div>
       <div class="todo-item active-item">
         <div class="checkbox"></div>
         <div class="todo-content"><div class="todo-text">Prepare mood board</div></div>
-        <span class="todo-meta">Yesterday</span>
         <button class="delete-btn" style="opacity:0.5">✕</button>
       </div>
       <div class="todo-item completed-item">
         <div class="checkbox checked"></div>
         <div class="todo-content"><div class="todo-text completed">Buy printer ink</div></div>
-        <span class="todo-meta">Yesterday</span>
         <button class="delete-btn" style="opacity:0.5">✕</button>
       </div>
     </div>
@@ -509,7 +553,7 @@
 <div class="view" id="active-filter">
   <div class="view-label">
     <h2>Active Filter</h2>
-    <p>Only active items shown — all cards have the terracotta left bar</p>
+    <p>Only active items — overdue card stands out with warm red tint, others have terracotta bar</p>
   </div>
   <div class="mockup-frame">
     <div class="app-header">
@@ -518,6 +562,7 @@
     </div>
     <div class="input-section">
       <input type="text" class="input-field" placeholder="Add a new task..." readonly>
+      <button class="date-btn" title="Set due date">📅</button>
       <button class="add-btn" title="Add task">+</button>
     </div>
     <div class="filter-tabs">
@@ -528,26 +573,29 @@
     <div class="sort-row">
       <span class="sort-label">Sort by</span>
       <div class="sort-options">
-        <button class="sort-btn sort-active">Date ↓</button>
+        <button class="sort-btn sort-active">Due ↓</button>
       </div>
     </div>
     <div class="todo-list">
-      <div class="todo-item active-item">
+      <div class="todo-item overdue-item">
         <div class="checkbox"></div>
-        <div class="todo-content"><div class="todo-text">Send invoice to client</div></div>
-        <span class="todo-meta">Today</span>
+        <div class="todo-content">
+          <div class="todo-text">Send invoice to client</div>
+          <div class="todo-due overdue"><span class="due-icon">⚠</span> Overdue · Apr 1</div>
+        </div>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item active-item">
         <div class="checkbox"></div>
-        <div class="todo-content"><div class="todo-text">Review logo drafts</div></div>
-        <span class="todo-meta">Today</span>
+        <div class="todo-content">
+          <div class="todo-text">Review logo drafts</div>
+          <div class="todo-due"><span class="due-icon">📅</span> Tomorrow</div>
+        </div>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item active-item">
         <div class="checkbox"></div>
         <div class="todo-content"><div class="todo-text">Prepare mood board for presentation</div></div>
-        <span class="todo-meta">Yesterday</span>
         <button class="delete-btn">✕</button>
       </div>
     </div>
@@ -558,7 +606,7 @@
 <div class="view" id="completed-filter">
   <div class="view-label">
     <h2>Completed Filter</h2>
-    <p>Only completed items — dimmed cards, no left bar, strikethrough text</p>
+    <p>Only completed items — dimmed cards, gray left bar, strikethrough text. Due dates shown muted, no overdue styling.</p>
   </div>
   <div class="mockup-frame">
     <div class="app-header">
@@ -567,6 +615,7 @@
     </div>
     <div class="input-section">
       <input type="text" class="input-field" placeholder="Add a new task..." readonly>
+      <button class="date-btn" title="Set due date">📅</button>
       <button class="add-btn" title="Add task">+</button>
     </div>
     <div class="filter-tabs">
@@ -577,20 +626,21 @@
     <div class="sort-row">
       <span class="sort-label">Sort by</span>
       <div class="sort-options">
-        <button class="sort-btn sort-active">Date ↓</button>
+        <button class="sort-btn sort-active">Due ↓</button>
       </div>
     </div>
     <div class="todo-list">
       <div class="todo-item completed-item">
         <div class="checkbox checked"></div>
         <div class="todo-content"><div class="todo-text completed">Buy printer ink</div></div>
-        <span class="todo-meta">Yesterday</span>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item completed-item">
         <div class="checkbox checked"></div>
-        <div class="todo-content"><div class="todo-text completed">Schedule call with Sarah</div></div>
-        <span class="todo-meta">Apr 1</span>
+        <div class="todo-content">
+          <div class="todo-text completed">Schedule call with Sarah</div>
+          <div class="todo-due" style="text-decoration:line-through;opacity:0.6;"><span class="due-icon">📅</span> Apr 2</div>
+        </div>
         <button class="delete-btn">✕</button>
       </div>
     </div>
@@ -670,39 +720,49 @@
     <div class="sort-row">
       <span class="sort-label">Sort by</span>
       <div class="sort-options">
-        <button class="sort-btn sort-active" style="background: var(--surface);">Date ↓</button>
+        <button class="sort-btn sort-active" style="background: var(--surface);">Due ↓</button>
         <div class="sort-divider"></div>
         <button class="sort-btn">Status ↕</button>
       </div>
     </div>
     <div class="todo-list">
-      <div class="todo-item active-item" style="box-shadow: 0 2px 8px rgba(44,40,37,0.08);">
+      <div class="todo-item overdue-item" style="box-shadow: 0 2px 8px rgba(44,40,37,0.08);">
         <div class="checkbox" style="border-color: var(--success);"></div>
-        <div class="todo-content"><div class="todo-text">Send invoice to client</div></div>
-        <span class="todo-meta">Today</span>
+        <div class="todo-content">
+          <div class="todo-text">Send invoice to client</div>
+          <div class="todo-due overdue"><span class="due-icon">⚠</span> Overdue · Apr 1</div>
+        </div>
         <button class="delete-btn" style="opacity:1;">✕</button>
       </div>
       <div class="todo-item active-item">
         <div class="checkbox"></div>
-        <div class="todo-content"><div class="todo-text">Review logo drafts</div></div>
-        <span class="todo-meta">Today</span>
+        <div class="todo-content">
+          <div class="todo-text">Review logo drafts</div>
+          <div class="todo-due"><span class="due-icon">📅</span> Tomorrow</div>
+        </div>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item completed-item">
         <div class="checkbox checked"></div>
         <div class="todo-content"><div class="todo-text completed">Buy printer ink</div></div>
-        <span class="todo-meta">Yesterday</span>
         <button class="delete-btn">✕</button>
       </div>
     </div>
   </div>
 
   <div class="comparison">
-    <h3>Active vs Completed — Side by Side</h3>
-    <div class="compare-grid">
+    <h3>Active vs Overdue vs Completed — Side by Side</h3>
+    <div class="compare-grid" style="grid-template-columns: 1fr 1fr 1fr;">
       <div class="compare-card is-active">
         <div class="c-checkbox"></div>
         <div class="c-text">Active task</div>
+      </div>
+      <div class="compare-card" style="background:var(--overdue-bg);border-left:3px solid var(--overdue-bar);">
+        <div class="c-checkbox"></div>
+        <div style="font-size:14px;">
+          <div style="color:var(--text-primary);">Overdue task</div>
+          <div style="font-size:11px;color:var(--overdue);margin-top:2px;">⚠ Overdue</div>
+        </div>
       </div>
       <div class="compare-card is-completed">
         <div class="c-checkbox"></div>
@@ -718,7 +778,10 @@
         <strong>Input focused:</strong> Terracotta ring (2px) + soft glow<br>
         <strong>Add button hovered:</strong> Darker terracotta + deeper shadow<br>
         <strong>Active card:</strong> Warm white + soft terracotta left bar + subtle elevation<br>
-        <strong>Completed card:</strong> Muted stone + soft gray left bar + no shadow<br>
+        <strong>Overdue card:</strong> Warm red tint + red left bar + "Overdue" badge in muted red<br>
+        <strong>Completed card:</strong> Muted stone + soft gray left bar + no shadow (no overdue styling)<br>
+        <strong>Due date badge:</strong> Small calendar icon + date label below task text<br>
+        <strong>Calendar button (input):</strong> Ghost icon, accent color on hover, opens date picker popover<br>
         <strong>Card hovered:</strong> Elevated shadow + delete button fades in<br>
         <strong>Checkbox hovered:</strong> Border shifts to sage green<br>
         <strong>Checkbox checked:</strong> Filled sage green + white checkmark<br>

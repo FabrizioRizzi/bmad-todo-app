@@ -29,6 +29,8 @@ classification:
   projectContext: greenfield
 lastEdited: '2026-04-02'
 editHistory:
+  - date: '2026-04-03'
+    changes: 'Added due date feature to V1 scope: 3 new FRs (FR7-FR9 due dates), sort by due date (FR11). Removed creation date from frontend display and sort options. Data model keeps createdAt in DB but not shown in UI. Renumbered to FR1-FR29.'
   - date: '2026-04-02'
     changes: 'Post-validation refinement: tightened 6 measurability violations (FR11, FR20, FR24, NFR bundle size, reliability, maintainability), replaced 1 density anti-pattern, added conceptual data model'
 ---
@@ -137,6 +139,7 @@ Alex is a freelance designer juggling multiple small projects. They've tried Tod
 | Data persistence across sessions | Journey 2 |
 | Full CRUD lifecycle (create, read, toggle, delete) | Journey 1, 2 |
 | Toggle completion status in both directions | Journey 2 |
+| Optional due date with overdue visual indicator | Journey 2 |
 | Responsive layout (desktop + mobile) | Journey 3 |
 | Graceful error handling (network, validation) | Journey 3 |
 | Input validation (prevent empty todos) | Journey 3 |
@@ -217,11 +220,13 @@ bmad-todo-app is a Single Page Application (SPA) with a backend REST API. The fr
 
 **Must-Have Capabilities:**
 - Create a todo with text description (Enter to submit).
+- Optionally set a due date on a todo at creation or any time after.
 - View all todos in a list.
 - Filter todos by status (all, active, completed).
-- Sort todos (by creation date, by status).
+- Sort todos (by due date, by status).
 - Mark a todo as complete / revert to active (checkbox toggle).
 - Delete a todo.
+- Visual indicator for overdue todos (active todos whose due date is in the past).
 - Persistent storage via REST API (data survives refresh/restart).
 - Responsive layout for desktop and mobile (320px minimum).
 - Empty state, loading state, and error state handling.
@@ -232,7 +237,7 @@ bmad-todo-app is a Single Page Application (SPA) with a backend REST API. The fr
 
 ### Conceptual Data Model
 
-A todo item consists of: a unique identifier, a text description (non-empty), a completion status (active or completed), and a creation timestamp. V1 has no user association — all todos belong to a single implicit user. The schema must support adding a user foreign key in Phase 2 without migrating existing records.
+A todo item consists of: a unique identifier, a text description (non-empty), a completion status (active or completed), a creation timestamp (stored but not displayed in the UI), and an optional due date. V1 has no user association — all todos belong to a single implicit user. The schema must support adding a user foreign key in Phase 2 without migrating existing records.
 
 ### Data Flow Decision
 
@@ -248,7 +253,7 @@ V1 uses **synchronous (wait-for-response) updates** rather than optimistic UI up
 - Optimistic UI updates for snappier perceived performance.
 
 **Phase 3 (Expansion):**
-- Task prioritization and due dates.
+- Task prioritization.
 - Labels, categories, or project grouping.
 - Notifications and reminders.
 - Collaboration and shared task lists.
@@ -279,43 +284,49 @@ V1 uses **synchronous (wait-for-response) updates** rather than optimistic UI up
 - FR5: User can delete a todo permanently.
 - FR6: User can see a visual distinction between active and completed todos.
 
+### Due Dates
+
+- FR7: User can optionally set a due date when creating a todo.
+- FR8: User can add, change, or remove a due date on an existing todo.
+- FR9: System displays overdue visual indicator on active todos whose due date is in the past.
+
 ### Filtering & Sorting
 
-- FR7: User can filter the todo list to show all todos, only active todos, or only completed todos.
-- FR8: User can sort todos by creation date.
-- FR9: User can sort todos by completion status.
+- FR10: User can filter the todo list to show all todos, only active todos, or only completed todos.
+- FR11: User can sort todos by due date (todos without a due date appear last).
+- FR12: User can sort todos by completion status.
 
 ### Input Validation & Error Handling
 
-- FR10: System prevents creation of a todo with an empty or whitespace-only description.
-- FR11: System displays a user-visible error message identifying the failed action when a network request fails.
-- FR12: System preserves the visible todo list and user context when an error occurs.
-- FR13: System displays a loading state while data is being fetched from the server.
-- FR14: System displays an empty state message when no todos exist.
+- FR13: System prevents creation of a todo with an empty or whitespace-only description.
+- FR14: System displays a user-visible error message identifying the failed action when a network request fails.
+- FR15: System preserves the visible todo list and user context when an error occurs.
+- FR16: System displays a loading state while data is being fetched from the server.
+- FR17: System displays an empty state message when no todos exist.
 
 ### Data Persistence
 
-- FR15: System persists all todos to a backend database via REST API.
-- FR16: System retrieves and displays all persisted todos when the application is loaded.
-- FR17: All todo state changes (create, complete, uncomplete, delete) are confirmed by the server before the UI reflects the change.
+- FR18: System persists all todos to a backend database via REST API.
+- FR19: System retrieves and displays all persisted todos when the application is loaded.
+- FR20: All todo state changes (create, complete, uncomplete, delete, set/change due date) are confirmed by the server before the UI reflects the change.
 
 ### Accessibility
 
-- FR18: User can perform all actions (create, complete, uncomplete, delete, filter, sort) using only a keyboard.
-- FR19: System provides screen reader-compatible markup for all interactive elements and state changes.
-- FR20: System moves focus to the next item in the list after state-changing actions, or to the input field if the list is empty (e.g., after deleting a todo, focus moves to the adjacent todo or the creation input).
-- FR21: All text and interactive elements meet WCAG 2.1 AA color contrast requirements.
-- FR22: All touch targets meet minimum size requirements for mobile interaction (44x44px).
+- FR21: User can perform all actions (create, complete, uncomplete, delete, set due date, filter, sort) using only a keyboard.
+- FR22: System provides screen reader-compatible markup for all interactive elements and state changes.
+- FR23: System moves focus to the next item in the list after state-changing actions, or to the input field if the list is empty (e.g., after deleting a todo, focus moves to the adjacent todo or the creation input).
+- FR24: All text and interactive elements meet WCAG 2.1 AA color contrast requirements.
+- FR25: All touch targets meet minimum size requirements for mobile interaction (44x44px).
 
 ### Responsive Design
 
-- FR23: User can access and use all features on screen widths from 320px (mobile) to desktop.
-- FR24: System adapts layout and interaction targets across device sizes without horizontal scrolling, overlapping elements, or truncated interactive content.
+- FR26: User can access and use all features on screen widths from 320px (mobile) to desktop.
+- FR27: System adapts layout and interaction targets across device sizes without horizontal scrolling, overlapping elements, or truncated interactive content.
 
 ### Deployment
 
-- FR25: System can be built and run as a set of Docker containers via a single Docker Compose command.
-- FR26: System data persists across container restarts.
+- FR28: System can be built and run as a set of Docker containers via a single Docker Compose command.
+- FR29: System data persists across container restarts.
 
 ## Non-Functional Requirements
 

@@ -466,7 +466,7 @@
   .d6 .checkbox.checked::after { content: "✓"; color: white; font-size: 11px; font-weight: 700; }
   .d6 .todo-text { flex: 1; font-size: 15px; color: var(--text-primary); }
   .d6 .todo-text.completed { color: var(--text-completed); text-decoration: line-through; }
-  .d6 .todo-meta { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+  /* todo-meta removed — creation dates not shown in UI */
   .d6 .delete-btn {
     opacity: 0; width: 24px; height: 24px; border-radius: 4px; border: none;
     background: transparent; color: var(--text-secondary); cursor: pointer;
@@ -546,7 +546,7 @@
 
 <div class="hero">
   <h1>bmad-todo-app — Design Directions</h1>
-  <p>Explore 6 visual directions for the Earthy Modern palette. Click each tab to compare layouts, interactions, and component styles.</p>
+  <p>Explore 6 visual directions for the Earthy Modern palette. Click each tab to compare layouts, interactions, and component styles. <em style="color:var(--accent);">Note: due dates and overdue indicators are shown in the final direction mockup.</em></p>
 </div>
 
 <div class="nav" id="nav">
@@ -807,7 +807,7 @@
 <div class="direction d6" id="d6">
   <div class="direction-header">
     <h2>Direction 6: Dense Productive</h2>
-    <p>Compact rows, inline metadata, sort control, count badge. Optimized for users with longer lists who value efficiency over whitespace.</p>
+    <p>Compact rows, sort control, count badge. Optimized for users with longer lists who value efficiency over whitespace.</p>
   </div>
   <div class="mockup-frame">
     <div class="app-header">
@@ -829,31 +829,26 @@
       <div class="todo-item">
         <div class="checkbox"></div>
         <div class="todo-text">Send invoice to client</div>
-        <span class="todo-meta">Today</span>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item">
         <div class="checkbox"></div>
         <div class="todo-text">Review logo drafts</div>
-        <span class="todo-meta">Today</span>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item">
         <div class="checkbox"></div>
         <div class="todo-text">Prepare mood board</div>
-        <span class="todo-meta">Yesterday</span>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item">
         <div class="checkbox checked"></div>
         <div class="todo-text completed">Buy printer ink</div>
-        <span class="todo-meta">Yesterday</span>
         <button class="delete-btn">✕</button>
       </div>
       <div class="todo-item">
         <div class="checkbox checked"></div>
         <div class="todo-text completed">Schedule call with Sarah</div>
-        <span class="todo-meta">Apr 1</span>
         <button class="delete-btn">✕</button>
       </div>
     </div>

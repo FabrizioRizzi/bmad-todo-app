@@ -80,6 +80,8 @@ Both loops are primary. The UX must serve rapid-fire task entry and calm task re
 | Action | Target Interaction Cost |
 |---|---|
 | Create a todo | Type + Enter (no extra buttons) |
+| Set due date (creation) | Click calendar icon + pick date (optional, before submit) |
+| Set/change due date (existing) | Click due date badge + pick date |
 | Complete a todo | Single click/tap on checkbox |
 | Uncomplete a todo | Single click/tap on checkbox |
 | Delete a todo | Single click/tap on delete control |
@@ -276,13 +278,15 @@ Components are copied into the codebase (not installed as a dependency), giving 
 
 - **Input** — Todo creation field (persistent, always visible)
 - **Checkbox** — Completion toggle with custom styling
-- **Button** — Delete control, filter/sort actions
+- **Button** — Delete control, filter/sort actions, due date trigger
 - **Toast** — Undo delete notifications
 - **Badge / Tabs** — Filter controls (All / Active / Completed)
+- **Popover** — Date picker container for due date selection
+- **Calendar** — Date picker component for selecting due dates
 - **Skeleton** — Loading state placeholders
 
 Custom components built on Tailwind (no Shadcn equivalent needed):
-- **Todo list item** — The core list row combining checkbox, text, and delete
+- **Todo list item** — The core list row combining checkbox, text, due date, and delete
 - **Empty state** — First-visit illustration/prompt
 - **Error banner** — Inline error messaging
 
@@ -428,6 +432,9 @@ bmad-todo-app uses **exclusively established patterns** — there is no novel in
 | `--success` | Completion feedback | Warm sage green (#6B8F71) | Natural, calming confirmation |
 | `--error` | Error messages, failed states | Muted warm red (#C45A4A) | Noticeable but not alarming — "conversation, not alarm" |
 | `--error-bg` | Error banner background | Soft red tint (#F5E1DF) | Calm error surface |
+| `--overdue` | Overdue indicator text | Warm muted red (#C45A4A) | Same as error — noticeable but not alarming |
+| `--overdue-bg` | Overdue card background tint | Soft red-warm tint (#F9EDEB) | Subtle warmth shift from active card, not harsh |
+| `--overdue-bar` | Overdue card left bar | Warm muted red (#C45A4A) | Replaces terracotta bar for overdue active items |
 | `--toast-bg` | Undo toast background | Dark warm gray (#3D3835) | High contrast for visibility, warm tone |
 | `--toast-text` | Undo toast text | Warm white (#FAFAF7) | Readable against dark toast |
 
@@ -469,7 +476,7 @@ This renders as:
 | `--text-lg` | 18px (1.125rem) | 500 (medium) | 1.4 | Section headings (if needed) |
 | `--text-base` | 16px (1rem) | 400 (regular) | 1.5 | Todo item text — the most important size |
 | `--text-sm` | 14px (0.875rem) | 400 (regular) | 1.4 | Filter labels, sort controls, metadata |
-| `--text-xs` | 12px (0.75rem) | 500 (medium) | 1.3 | Item count badge, timestamps |
+| `--text-xs` | 12px (0.75rem) | 500 (medium) | 1.3 | Item count badge, due date labels |
 
 **Typography Decisions:**
 - Todo item text at 16px ensures readability on mobile without zooming (iOS auto-zooms inputs below 16px)
@@ -540,7 +547,7 @@ Six design directions were generated and evaluated using the Earthy Modern palet
 3. **Minimal Flat** — Underline input, no card wrapper, uppercase labels, maximum content focus
 4. **Bold Accent** — Terracotta header bar, row cards with elevation, full-width tab filters with underline
 5. **Soft Elevated** — Borderless input with soft shadow, rounded cards per item, generous radius, warmest feel
-6. **Dense Productive** — Compact rows, inline timestamps, sort control, count badge, efficiency-first
+6. **Dense Productive** — Compact rows, due date badges, sort control, count badge, efficiency-first
 
 Interactive HTML mockups generated at `ux-design-directions.html` for comparison.
 
@@ -564,9 +571,8 @@ The final direction combines elements from three explorations into a cohesive de
 
 **From Direction 6 (Dense Productive) — structure and metadata:**
 - Dedicated sort row below filters with subtle background strip
-- Sort options: **Date ↓** and **Status ↕** (toggle between active-first and completed-first)
+- Sort options: **Due ↓** and **Status ↕** (toggle between active-first and completed-first)
 - Status sort hidden when filter is Active or Completed (redundant when already filtered)
-- Inline timestamp metadata on each todo item (e.g., "Today", "Yesterday", "Apr 1")
 - Count badge in header (accent-colored pill showing remaining items)
 
 **Additional refinements from iteration:**
@@ -590,7 +596,7 @@ Final interactive mockup generated at `ux-design-direction-final.html` showing d
 | Add button beside input | Supports both input modes: Enter for keyboard users, tap "+" for mobile/touch users. Reinforces the form-field mental model. Does not replace Enter — it supplements it. |
 | Smooth card distinction | Both active and completed cards belong to the same visual family (both have left bars, both have borders). The difference is gentle — warm vs. muted — supporting "instant legibility" without harsh visual breaks. |
 | Card borders | Adds definition to each item without heavy visual weight. Works with the soft elevated aesthetic rather than against it. |
-| Inline timestamps | Supports the review loop — users can see when tasks were created without extra interaction. Small, secondary text that doesn't compete with task descriptions. |
+| Due date badges | Supports the review loop — users can see when tasks are due without extra interaction. Small, secondary text that doesn't compete with task descriptions. |
 
 ### Implementation Approach
 
@@ -722,26 +728,26 @@ The user manages their list view to focus on what matters.
 
 ```mermaid
 flowchart TD
-    A[User views All tasks<br/>— active + completed visible<br/>Sort: Date ↓] --> B{User action?}
+    A[User views All tasks<br/>— active + completed visible<br/>Sort: Due ↓] --> B{User action?}
 
     B -->|Tap 'Active' tab| C[Tab underline slides to Active<br/>Completed items animate out<br/>— fade/slide transition]
-    C --> D[Only active items visible<br/>Sort row: Date ↓ only<br/>— Status sort hidden]
+    C --> D[Only active items visible<br/>Sort row: Due ↓ only<br/>— Status sort hidden]
     D --> E{User action?}
     E -->|Tap 'All' tab| A
     E -->|Tap 'Completed' tab| F
 
     B -->|Tap 'Completed' tab| F[Tab underline slides to Completed<br/>Active items animate out]
-    F --> G[Only completed items visible<br/>Sort row: Date ↓ only<br/>— Status sort hidden]
+    F --> G[Only completed items visible<br/>Sort row: Due ↓ only<br/>— Status sort hidden]
     G --> H{User action?}
     H -->|Tap 'All' tab| A
     H -->|Tap 'Active' tab| C
 
     B -->|Tap 'Status ↕' sort| I{Current sort state?}
-    I -->|Was Date ↓| J[List reorders with animation:<br/>Active items group first<br/>Completed items group below<br/>Status ↕ becomes active]
+    I -->|Was Due ↓| J[List reorders with animation:<br/>Active items group first<br/>Completed items group below<br/>Status ↕ becomes active]
     I -->|Was Status — active first| K[List reorders:<br/>Completed items group first<br/>Active items group below]
     I -->|Was Status — completed first| L[List reorders:<br/>Active items group first<br/>Completed items group below]
 
-    B -->|Tap 'Date ↓' sort| M[List reorders by creation date<br/>Date ↓ becomes active sort]
+    B -->|Tap 'Due ↓' sort| M[List reorders by due date<br/>Due ↓ becomes active sort]
 
     G -->|No completed items| N[Filtered empty state:<br/>'No completed tasks'<br/>'Tasks you complete<br/>will appear here.']
     D -->|No active items| O[Filtered empty state:<br/>'No active tasks'<br/>'Add a task above to<br/>get started.']
@@ -906,10 +912,10 @@ Every empty state explains *why* the list is empty and what to do next:
 **Purpose:** The core list item displaying a single todo with status, text, metadata, and actions.
 
 **Anatomy:**
-- Left accent bar (3px) — `--active-bar` or `--completed-bar` based on status
+- Left accent bar (3px) — `--active-bar`, `--overdue-bar`, or `--completed-bar` based on status
 - Checkbox (Shadcn, customized) — toggle completion
 - Task text — primary content, 16px, with strikethrough when completed
-- Timestamp metadata — creation date, 11px, right-aligned
+- Due date badge — optional, below task text, 11px. Shows relative label ("Today", "Tomorrow", "Apr 5") or "Overdue" in `--overdue` color for past-due active items
 - Delete button — ghost "✕", revealed on hover (visible at 50% opacity on mobile)
 
 **States:**
@@ -917,18 +923,30 @@ Every empty state explains *why* the list is empty and what to do next:
 | State | Background | Left Bar | Text | Checkbox | Shadow |
 |---|---|---|---|---|---|
 | Active | `--active-bg` (#FBF9F7) | `--active-bar` (#D9A193) | `--text-primary` | Empty, warm border | Subtle elevation |
+| Active + Overdue | `--overdue-bg` (#F9EDEB) | `--overdue-bar` (#C45A4A) | `--text-primary` | Empty, warm border | Subtle elevation |
 | Completed | `--completed-bg` (#F3EFEA) | `--completed-bar` (#D4CEC7) | `--text-completed` + strikethrough | Sage green fill + ✓ | None |
 | Hovered (active) | `--active-bg` | `--active-bar` | `--text-primary` | Border → sage green | Increased elevation |
+| Hovered (overdue) | `--overdue-bg` | `--overdue-bar` | `--text-primary` | Border → sage green | Increased elevation |
 | Hovered (completed) | `--completed-bg` | `--completed-bar` | `--text-completed` | Sage green fill | Slight elevation |
 | Loading (pending) | Current bg | Current bar | Current text | Pending indicator | Current shadow |
 | Animating in | Fade + slide from top | — | — | — | — |
 | Animating out (delete) | Fade + slide out | — | — | — | — |
 
+**Overdue treatment:** An active todo whose due date is in the past receives a subtle visual shift — the card background warms to `--overdue-bg`, the left bar becomes `--overdue-bar` (muted red), and the due date badge displays "Overdue" in `--overdue` color. Completed todos never show overdue styling regardless of due date. The overdue state is determined client-side by comparing the due date to the current date.
+
+**Due date interaction on existing todos:**
+- Clicking the due date badge (or a small calendar icon on cards without a due date) opens a date picker popover anchored to the card
+- User can set, change, or clear the due date
+- Change is a PATCH to the API (synchronous — waits for confirmation)
+- On success: card updates smoothly (badge text changes, overdue styling applies/removes if relevant)
+- On failure: revert to previous due date, show error banner
+
 **Accessibility:**
 - `role="listitem"` within a `role="list"` container
 - Checkbox: `aria-label="Mark [task text] as complete"` / `"Mark [task text] as active"`
+- Due date control: `aria-label="Set due date for [task text]"` / `"Change due date for [task text]"`
 - Delete button: `aria-label="Delete [task text]"`
-- Focus order: checkbox → delete button (Tab navigation within item)
+- Focus order: checkbox → due date → delete button (Tab navigation within item)
 - After completion toggle: focus remains on the checkbox
 - After delete: focus moves to next item's checkbox, or input field if list is empty
 
@@ -944,6 +962,7 @@ Every empty state explains *why* the list is empty and what to do next:
 
 **Anatomy:**
 - Input field (Shadcn, customized) — full width, borderless, soft shadow
+- Due date button — optional calendar icon button (ghost style) that opens a date picker popover. When a date is selected, the button shows the date label instead of the icon.
 - Add button (Shadcn Button, customized) — 50x50 terracotta "+"
 
 **States:**
@@ -959,15 +978,17 @@ Every empty state explains *why* the list is empty and what to do next:
 
 **Accessibility:**
 - Input: `aria-label="New task description"`, `placeholder="Add a new task..."`
+- Due date button: `aria-label="Set due date"`, opens popover with date picker
 - Button: `aria-label="Add task"`, `type="submit"`
 - Wrapped in a `<form>` element so Enter triggers submit natively
 - On submit success: `aria-live="polite"` region announces "Task added"
 
 **Behavior:**
 - Enter key and button click both trigger the same submit handler
+- Due date is optional — if the date button is not used, no due date is set
 - Empty/whitespace-only submissions silently prevented (no error, no submission)
-- On API failure: input retains text, error banner appears separately
-- On success: input clears, refocuses, ready for next entry
+- On API failure: input retains text (and selected due date), error banner appears separately
+- On success: input clears, due date resets, refocuses, ready for next entry
 
 #### FilterTabs
 
@@ -1004,7 +1025,7 @@ Every empty state explains *why* the list is empty and what to do next:
 
 **Anatomy:**
 - "Sort by" label — uppercase, small, secondary text
-- Sort options: "Date ↓" and "Status ↕" (when "All" filter is active)
+- Sort options: "Due ↓" and "Status ↕" (when "All" filter is active)
 - Vertical divider between options
 - Subtle background strip to visually separate from filter tabs
 
@@ -1016,11 +1037,11 @@ Every empty state explains *why* the list is empty and what to do next:
 | Hover (inactive) | — | `--text-primary`, surface bg |
 
 **Conditional visibility:**
-- Filter = "All": show both "Date ↓" and "Status ↕"
-- Filter = "Active" or "Completed": show only "Date ↓" (status sort hidden)
+- Filter = "All": show both "Due ↓" and "Status ↕"
+- Filter = "Active" or "Completed": show only "Due ↓" (status sort hidden)
 
 **Behavior:**
-- "Date ↓" sorts by creation date, newest first
+- "Due ↓" sorts by due date, soonest first. Todos without a due date appear last.
 - "Status ↕" toggles between active-first and completed-first on each click
 - Sort change triggers animated list reordering
 - Active sort button has highlighted styling

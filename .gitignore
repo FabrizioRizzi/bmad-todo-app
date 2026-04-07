@@ -18,8 +18,18 @@ pnpm-debug.log*
 # Dependencies and package managers
 node_modules/
 
-# Build and test output (common when you add the app)
+# pnpm
+.pnpm-store/
+
+# Build and test output
 dist/
 build/
 out/
 coverage/
+*.local
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

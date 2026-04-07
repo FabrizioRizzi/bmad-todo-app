@@ -1,0 +1,16 @@
+{
+	"name": "backend",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "tsx watch src/server.ts",
+		"build": "tsc",
+		"test": "vitest run"
+	},
+	"devDependencies": {
+		"@types/node": "^25.5.2",
+		"tsx": "^4.19.0",
+		"typescript": "~6.0.2"
+	}
+}

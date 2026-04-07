@@ -1,6 +1,6 @@
 # Story 1.1: Monorepo Scaffold & Tooling Setup
 
-Status: review
+Status: done
 
 ## Story
 

@@ -37,7 +37,7 @@
 generated: 2026-04-07
 last_updated: 2026-04-07
 project: bmad-todo-app
-# last_updated by: dev-story workflow (story 1-1 review)
+# last_updated by: sync 1-1 to done after review
 project_key: NOKEY
 tracking_system: file-system
 story_location: "{project-root}/_bmad-output/implementation-artifacts"
@@ -45,8 +45,8 @@ story_location: "{project-root}/_bmad-output/implementation-artifacts"
 development_status:
   # Epic 1: Project Foundation & First Todo
   epic-1: in-progress
-  1-1-monorepo-scaffold-and-tooling-setup: review
-  1-2-backend-api-and-database-foundation: backlog
+  1-1-monorepo-scaffold-and-tooling-setup: done
+  1-2-backend-api-and-database-foundation: done
   1-3-todo-crud-api-endpoints: backlog
   1-4-frontend-foundation-with-design-tokens: backlog
   1-5-create-todo-and-view-list: backlog

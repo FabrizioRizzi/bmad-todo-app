@@ -5,5 +5,9 @@ export default defineConfig({
 		environment: 'node',
 		globals: true,
 		exclude: ['dist/**', 'node_modules/**'],
+		env: {
+			DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/bmad_todo',
+			NODE_ENV: 'test',
+		},
 	},
 });

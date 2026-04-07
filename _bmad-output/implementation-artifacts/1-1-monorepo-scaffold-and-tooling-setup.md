@@ -43,11 +43,11 @@ So that the product stays consistent and regressions are caught before they reac
   - [x] Add `tsx` as dev dependency for development server
   - [x] Add `"dev": "tsx watch src/server.ts"` and `"build": "tsc"` scripts
 - [x] Task 4: Create shared TypeScript base config (AC: #4, #5)
-  - [x] Create `tsconfig.base.json` at root with strict mode, target ES2022, module NodeNext
+  - [x] Create `tsconfig.base.json` at root with strict mode, target ES2022, `module` / `moduleResolution` suited to Vite (`ESNext` + `bundler`)
   - [x] Update `packages/frontend/tsconfig.json` to extend `../../tsconfig.base.json`
   - [x] Configure frontend tsconfig with path alias `@/*` → `./src/*`
   - [x] Create `packages/backend/tsconfig.json` extending `../../tsconfig.base.json`
-  - [x] Configure backend tsconfig with `outDir: "./dist"`, path alias `@/*` → `./src/*`
+  - [x] Configure backend tsconfig with `module` / `moduleResolution` `NodeNext`, `outDir: "./dist"`, path alias `@/*` → `./src/*`
   - [x] Ensure both compile without errors
 - [x] Task 5: Configure Biome (AC: #6, #7)
   - [x] Install `@biomejs/biome` as root dev dependency: `pnpm add -Dw @biomejs/biome`
@@ -58,7 +58,7 @@ So that the product stays consistent and regressions are caught before they reac
   - [x] Add root script `"lint:fix": "biome check --write ."`
   - [x] Run `pnpm biome check` and fix any issues until zero errors
 - [x] Task 6: Configure pre-commit hook (AC: #7)
-  - [x] Install `simple-git-hooks` and `lint-staged` (or `lefthook`) as root dev dependencies
+  - [x] Install `simple-git-hooks` as a root dev dependency (pre-commit runs `pnpm biome check --staged` directly; no `lint-staged` or `lefthook` required)
   - [x] Configure pre-commit hook to run `pnpm biome check --staged --no-errors-on-unmatched` on staged files
   - [x] Add `"prepare": "simple-git-hooks"` (or equivalent) to root package.json
   - [x] Verify hook triggers on commit
@@ -187,7 +187,7 @@ bmad-todo-app/
 }
 ```
 
-The frontend tsconfig extends this and adds JSX support (`"jsx": "react-jsx"`), DOM libs, and path aliases. The backend tsconfig extends this and sets `outDir`, `rootDir`, and backend-specific path aliases.
+The frontend tsconfig extends this and adds JSX support (`"jsx": "react-jsx"`), DOM libs, and path aliases. The backend tsconfig extends this and overrides `module` / `moduleResolution` to `NodeNext` for Node ESM, plus `outDir`, `rootDir`, and path aliases.
 
 ### biome.json Specification
 
@@ -355,3 +355,12 @@ claude-4.6-opus-high
 ### Change Log
 
 - 2026-04-07: Story 1.1 implemented — full monorepo scaffold with pnpm workspace, TypeScript, Biome, Vitest, Playwright, and pre-commit hooks
+- 2026-04-07: Code review patches — Playwright `webServer`, explicit `vitest` in frontend/backend packages, Task 6 wording fix
+- 2026-04-07: Backend TypeScript — `NodeNext` / `NodeNext` override in `packages/backend/tsconfig.json`; shared base stays bundler-oriented
+
+### Review Findings
+
+- [x] [Review][Patch] Playwright should start or reuse the Vite dev server — addressed: `webServer` in `e2e/playwright.config.ts` runs `pnpm --filter frontend dev` from repo root with `reuseExistingServer` locally.
+- [x] [Review][Patch] Declare Vitest in workspace packages — addressed: `vitest` added to `devDependencies` in `packages/frontend` and `packages/backend`.
+- [x] [Review][Decision] Shared `tsconfig.base.json` module settings vs story Task 4 — resolved: keep bundler-oriented base for Vite; `packages/backend/tsconfig.json` overrides `module` and `moduleResolution` to `NodeNext`.
+- [x] [Review][Patch] Story Task 6 subtasks vs repo — addressed: Task 6 subtask text updated to match `simple-git-hooks` + Biome on staged files only.

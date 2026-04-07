@@ -1,6 +1,6 @@
 # Story 1.3: Todo CRUD API Endpoints
 
-Status: ready-for-dev
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -32,20 +32,20 @@ So that my tasks are persisted and available across sessions.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Zod schemas (AC: #1–#5)
-  - [ ] Create `packages/backend/src/validation/todo-schemas.ts`:
+- [x] Task 1: Zod schemas (AC: #1–#5)
+  - [x] Create `packages/backend/src/validation/todo-schemas.ts`:
     - `createTodoBodySchema`: `z.object({ description: z.string() })` — Zod default strips unknown fields.
     - `todoResponseSchema`: `z.object({ id: z.string().uuid(), description: z.string(), isCompleted: z.boolean(), createdAt: z.string().datetime(), dueDate: z.string().nullable() })` — matches the serialized DTO, not the Drizzle row. Used for Swagger docs and response serialization.
     - `todoListResponseSchema`: `z.array(todoResponseSchema)`.
-  - [ ] Export inferred TypeScript types (`CreateTodoBody`, `TodoResponse`).
-- [ ] Task 2: DTO mapper (AC: #1, #3)
-  - [ ] In the route file (or a small helper), create a `toTodoDto(row)` function that:
+  - [x] Export inferred TypeScript types (`CreateTodoBody`, `TodoResponse`).
+- [x] Task 2: DTO mapper (AC: #1, #3)
+  - [x] In the route file (or a small helper), create a `toTodoDto(row)` function that:
     - Destructures the Drizzle row, **omitting `userId`**.
     - Converts `createdAt` (JS `Date` from Drizzle `timestamp`) → `.toISOString()` string.
     - Passes `dueDate` through as-is (Drizzle `date()` already returns `YYYY-MM-DD` string or `null`).
     - Returns `{ id, description, isCompleted, createdAt, dueDate }`.
-- [ ] Task 3: Todo route plugin (AC: #1–#5)
-  - [ ] Create `packages/backend/src/routes/todo-routes.ts` as a `fastify-plugin` (default export, `fp()` wrapper with `{ name: 'todo-routes' }`) that registers:
+- [x] Task 3: Todo route plugin (AC: #1–#5)
+  - [x] Create `packages/backend/src/routes/todo-routes.ts` as a `fastify-plugin` (default export, `fp()` wrapper with `{ name: 'todo-routes' }`) that registers:
     - `POST /api/todos`:
       - Attach `schema: { body: createTodoBodySchema, response: { 201: todoResponseSchema } }` for Swagger + type provider.
       - In the handler: trim `description`, check non-empty — if empty after trim, return `reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: 'Description is required' })` **directly** (do not let Zod/global handler prefix it).
@@ -53,16 +53,27 @@ So that my tasks are persisted and available across sessions.
     - `GET /api/todos`:
       - Attach `schema: { response: { 200: todoListResponseSchema } }`.
       - `db.select().from(todos).orderBy(asc(todos.createdAt))`, map each row via `toTodoDto`, reply **200**.
-  - [ ] Use `fp()` so routes register at root scope (flat structure, matching architecture).
-- [ ] Task 4: Wire registration (AC: #1–#4)
-  - [ ] In `packages/backend/src/server.ts`, register the todo routes plugin **after** `dbPlugin` (routes need `fastify.db`).
-- [ ] Task 5: Integration tests (AC: #6)
-  - [ ] Create `packages/backend/src/routes/todo-routes.test.ts`:
+  - [x] Use `fp()` so routes register at root scope (flat structure, matching architecture).
+- [x] Task 4: Wire registration (AC: #1–#4)
+  - [x] In `packages/backend/src/server.ts`, register the todo routes plugin **after** `dbPlugin` (routes need `fastify.db`).
+- [x] Task 5: Integration tests (AC: #6)
+  - [x] Create `packages/backend/src/routes/todo-routes.test.ts`:
     - Setup: `buildApp({ logger: false })` → `register(dbPlugin)` → `register(todoRoutes)` → `ready()`. Teardown: `close()`.
     - Data isolation: `beforeEach` or `afterEach` runs `DELETE FROM todos` via `app.db.delete(todos)` to prevent cross-test pollution.
     - Test cases: POST happy path (assert 201, UUID id, camelCase keys, `createdAt` is ISO string, `dueDate` is null, no `userId` key), GET with data (assert 200, array, correct shape), GET empty (assert 200, `[]`), POST empty string (assert 400, exact message `"Description is required"`), POST whitespace-only (assert 400, same message), POST missing description / wrong type (assert 400, message starts with `"Validation error:"`).
-- [ ] Task 6: Quality gate
-  - [ ] `pnpm --filter backend test` and `pnpm lint` pass.
+- [x] Task 6: Quality gate
+  - [x] `pnpm --filter backend test` and `pnpm lint` pass.
+
+### Review Findings
+
+- [x] [Review][Patch] Insert `.returning()` result not guarded for empty array — `const [row]` destructure yields `undefined` if insert returns no rows, causing TypeError in `toTodoDto` [`todo-routes.ts:51-53`]
+- [x] [Review][Patch] Whitespace-only POST test missing DB empty assertion — AC #2 requires "no row is inserted" for both empty and whitespace cases, but whitespace test lacks DB check [`todo-routes.test.ts:114-128`]
+- [x] [Review][Patch] GET list ordering fragile — no tie-breaker on identical `createdAt` — add secondary `asc(todos.id)` to ensure deterministic order [`todo-routes.ts:60-61`]
+- [x] [Review][Patch] GET list test does not assert full per-item DTO shape — AC #3 specifies `{ id, description, isCompleted, createdAt, dueDate }` but test only checks `id` order and absence of `userId` [`todo-routes.test.ts:69-78`]
+- [x] [Review][Patch] Malformed-body tests don't assert full error envelope — AC #5 specifies `{ statusCode: 400, error: "Bad Request", message }` but tests only check `message.startsWith` [`todo-routes.test.ts:130-148`]
+- [x] [Review][Patch] Missing `TodoListResponse` type export — Task 1 says "export inferred types" but `todoListResponseSchema` has no exported inferred type [`todo-schemas.ts`]
+- [x] [Review][Defer] No max length on description — `z.string()` with no `.max()` allows arbitrarily large payloads [`todo-schemas.ts:4`, `todo-routes.ts:40-52`] — deferred, pre-existing architectural decision
+- [x] [Review][Defer] `postTodo400ResponseSchema` union second branch overly permissive — `message: z.string()` doesn't enforce `"Validation error: "` prefix [`todo-schemas.ts:25-29`] — deferred, cosmetic schema strictness
 
 ## Dev Notes
 
@@ -162,11 +173,27 @@ claude-4.6-opus-high
 
 ### Debug Log References
 
+### Implementation Plan
+
+- Added Zod schemas and `FastifyPluginAsyncZod` todo routes with `toTodoDto`, trim-first empty check for AC #2, and Drizzle insert/select + `orderBy(asc(createdAt))`.
+- POST `response.400` uses `z.union` of `descriptionRequiredErrorSchema` and `zodBodyValidationErrorSchema` so outgoing **400** payloads from the global handler (`Validation error: …`) pass `serializerCompiler` (narrow literal-only 400 caused FST_ERR_RESPONSE_SERIALIZATION for malformed bodies).
+
 ### Completion Notes List
+
+- Story 1.3 implemented: `POST /api/todos` and `GET /api/todos` with camelCase DTOs, no `userId` in JSON, integration tests co-located in `todo-routes.test.ts`, `pnpm --filter backend test` and `pnpm lint` passing.
 
 ### File List
 
+- `packages/backend/src/validation/todo-schemas.ts` (new)
+- `packages/backend/src/routes/todo-routes.ts` (new)
+- `packages/backend/src/routes/todo-routes.test.ts` (new)
+- `packages/backend/src/server.ts` (modified)
+
+### Change Log
+
+- 2026-04-07: Implemented todo CRUD read/create API (Story 1.3), response schema union for POST 400 validation vs trim errors, integration tests and server wiring.
+
 ## Story completion status
 
-- **Status:** ready-for-dev
-- **Note:** Ultimate context engine analysis completed — comprehensive developer guide created.
+- **Status:** done
+- **Note:** Ready for code review; run `code-review` with a different LLM than the implementer when possible.

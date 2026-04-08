@@ -36,7 +36,45 @@ describe('TodoCard', () => {
 
 	it('renders todo description', () => {
 		renderWithQueryClient(<TodoCard todo={mockTodo} />);
-		expect(screen.getByText('Test todo')).toBeInTheDocument();
+		const description = screen.getByText('Test todo');
+		expect(description).toBeInTheDocument();
+		expect(description).toHaveClass('break-words');
+		expect(description).not.toHaveClass('truncate');
+	});
+
+	it('applies truncation for single-token descriptions', () => {
+		renderWithQueryClient(
+			<TodoCard
+				todo={{
+					...mockTodo,
+					description: 'SupercalifragilisticexpialidociousSupercalifragilisticexpialidocious',
+				}}
+			/>,
+		);
+
+		const description = screen.getByText(
+			'SupercalifragilisticexpialidociousSupercalifragilisticexpialidocious',
+		);
+		expect(description).toHaveClass('min-w-0', 'truncate');
+		expect(description).not.toHaveClass('break-words');
+	});
+
+	it('allows wrapping for multi-word descriptions', () => {
+		renderWithQueryClient(
+			<TodoCard
+				todo={{
+					...mockTodo,
+					description:
+						'One two three four five six seven eight nine ten eleven twelve thirteen fourteen',
+				}}
+			/>,
+		);
+
+		const description = screen.getByText(
+			'One two three four five six seven eight nine ten eleven twelve thirteen fourteen',
+		);
+		expect(description).toHaveClass('break-words');
+		expect(description).not.toHaveClass('truncate');
 	});
 
 	it('renders checkbox unchecked when todo is not completed', () => {

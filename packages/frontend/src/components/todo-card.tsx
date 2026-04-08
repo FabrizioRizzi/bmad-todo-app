@@ -36,6 +36,8 @@ export function TodoCard({
 	};
 
 	const animationClass = isExiting ? 'todo-card-exit-delete' : isEntering ? 'todo-card-enter' : '';
+	const isSingleTokenDescription = !/\s/.test(todo.description.trim());
+	const descriptionLayoutClass = isSingleTokenDescription ? 'truncate' : 'break-words';
 
 	return (
 		<li className={animationClass}>
@@ -71,7 +73,9 @@ export function TodoCard({
 							</svg>
 						)}
 					</div>
-					<p className="todo-card-text flex-1 text-[color:var(--text-primary)] text-[length:var(--text-base)] leading-[var(--text-base-leading)]">
+					<p
+						className={`todo-card-text min-w-0 flex-1 ${descriptionLayoutClass} text-[color:var(--text-primary)] text-[length:var(--text-base)] leading-[var(--text-base-leading)]`}
+					>
 						{todo.description}
 					</p>
 					{onDelete && (

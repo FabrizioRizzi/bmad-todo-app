@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+const AUTO_DISMISS_MS = 8000;
+
 test.describe('Story 2.3 - Error Banner Component', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
@@ -225,7 +227,7 @@ test.describe('Story 2.3 - Error Banner Component', () => {
 		await expect(banner).toBeVisible();
 
 		// Should be gone after 8+ seconds total (wait 4 more = 9 total)
-		await page.waitForTimeout(4000);
+		await page.waitForTimeout(AUTO_DISMISS_MS - 5000 + 500);
 		await expect(banner).not.toBeVisible({ timeout: 3000 });
 	});
 

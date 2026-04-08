@@ -5,6 +5,9 @@ type ErrorBannerProps = {
 	onDismiss: () => void;
 };
 
+export const AUTO_DISMISS_MS = 8000;
+export const EXIT_ANIMATION_MS = 200;
+
 export function ErrorBanner({ message, onDismiss }: ErrorBannerProps) {
 	const [exiting, setExiting] = useState(false);
 	const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -22,9 +25,9 @@ export function ErrorBanner({ message, onDismiss }: ErrorBannerProps) {
 		dismissTimerRef.current = setTimeout(() => {
 			setExiting(true);
 			exitTimerRef.current = setTimeout(() => {
-				onDismissRef.current();
-			}, 200);
-		}, 8000);
+				if (onDismissRef.current) onDismissRef.current();
+			}, EXIT_ANIMATION_MS);
+		}, AUTO_DISMISS_MS);
 
 		return () => {
 			if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);

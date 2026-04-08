@@ -316,3 +316,83 @@ describe('App – Error Banner Integration', () => {
 		expect(banners).toHaveLength(1);
 	});
 });
+
+describe('App – Original Coverage', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('renders the app title in the header', () => {
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+		expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('My Tasks');
+	});
+
+	it('shows todo count from loaded list', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(
+							JSON.stringify([
+								{
+									id: 'a',
+									description: 'One',
+									isCompleted: false,
+									createdAt: '2026-01-01T00:00:00.000Z',
+									dueDate: null,
+								},
+							]),
+							{
+								status: 200,
+								headers: { 'Content-Type': 'application/json' },
+							},
+						),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByRole('status', { name: /todo count/i })).toHaveTextContent('1 remaining');
+		});
+	});
+
+	it('renders add form and todo list regions', async () => {
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		expect(screen.getByRole('region', { name: /add new todo/i })).toBeInTheDocument();
+		expect(screen.getByRole('region', { name: /todo list/i })).toBeInTheDocument();
+	});
+
+	it('renders add field and submit control', () => {
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		expect(screen.getByPlaceholderText(/add a new task/i)).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: /add task/i })).toBeInTheDocument();
+	});
+});

@@ -14,6 +14,15 @@ const ERROR_MESSAGES: Record<ErrorActionType, string> = {
 	delete: "Couldn't delete that task — try again.",
 };
 
+const getErrorMessage = (actionType: ErrorActionType): string => {
+	const message = ERROR_MESSAGES[actionType];
+	if (!message) {
+		console.warn(`Missing error message for action type: ${actionType}`);
+		return 'An error occurred';
+	}
+	return message;
+};
+
 export function App() {
 	const { data: todos = [], isPending, isError } = useTodosQuery();
 	const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -24,7 +33,7 @@ export function App() {
 	}, []);
 
 	const showError = useCallback((actionType: ErrorActionType) => {
-		setErrorMessage(ERROR_MESSAGES[actionType]);
+		setErrorMessage(getErrorMessage(actionType));
 	}, []);
 
 	const handleDeleteError = useCallback(() => {

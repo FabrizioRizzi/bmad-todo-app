@@ -113,6 +113,16 @@ export async function createTodo(body: { description: string }): Promise<Todo> {
 	return data;
 }
 
+export async function deleteTodo(id: string): Promise<void> {
+	const res = await safeFetch(`/api/todos/${id}`, {
+		method: 'DELETE',
+	});
+	if (!res.ok) {
+		const err = await parseErrorResponse(res);
+		throw new ApiRequestError(err);
+	}
+}
+
 export async function toggleTodo(id: string, isCompleted: boolean): Promise<Todo> {
 	const res = await safeFetch(`/api/todos/${id}`, {
 		method: 'PATCH',

@@ -259,4 +259,42 @@ describe('todo routes', () => {
 			message: 'Todo not found',
 		});
 	});
+
+	it('DELETE /api/todos/:id removes todo and returns 204 with no body', async () => {
+		const createResponse = await app.inject({
+			method: 'POST',
+			url: '/api/todos',
+			payload: { description: 'Delete me' },
+		});
+		const todoId = createResponse.json().id as string;
+
+		const deleteResponse = await app.inject({
+			method: 'DELETE',
+			url: `/api/todos/${todoId}`,
+		});
+
+		expect(deleteResponse.statusCode).toBe(204);
+		expect(deleteResponse.body).toBe('');
+
+		const dbRows = await app.db
+			.select()
+			.from(todos)
+			.where((t) => eq(t.id, todoId));
+		expect(dbRows).toHaveLength(0);
+	});
+
+	it('DELETE /api/todos/:id with non-existent ID returns 404', async () => {
+		const fakeId = '550e8400-e29b-41d4-a716-446655440000';
+		const response = await app.inject({
+			method: 'DELETE',
+			url: `/api/todos/${fakeId}`,
+		});
+
+		expect(response.statusCode).toBe(404);
+		expect(response.json()).toEqual({
+			statusCode: 404,
+			error: 'Not Found',
+			message: 'Todo not found',
+		});
+	});
 });

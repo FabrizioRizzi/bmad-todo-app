@@ -9,9 +9,21 @@ type TodoListProps = {
 	todos: Todo[];
 	isInitialLoading: boolean;
 	highlightedId: string | null;
+	onDelete?: (id: string) => void;
+	exitingIds?: Set<string>;
+	enteringIds?: Set<string>;
+	externalError?: string | null;
 };
 
-export function TodoList({ todos, isInitialLoading, highlightedId }: TodoListProps) {
+export function TodoList({
+	todos,
+	isInitialLoading,
+	highlightedId,
+	onDelete,
+	exitingIds,
+	enteringIds,
+	externalError,
+}: TodoListProps) {
 	const [error, setError] = useState<string | null>(null);
 	const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const showSkeleton = isInitialLoading;
@@ -29,14 +41,16 @@ export function TodoList({ todos, isInitialLoading, highlightedId }: TodoListPro
 		errorTimerRef.current = setTimeout(() => setError(null), 3000);
 	}, []);
 
+	const displayError = error || externalError;
+
 	return (
 		<div className="relative">
-			{error && (
+			{displayError && (
 				<div
 					role="status"
 					className="mb-[var(--space-4)] rounded-[var(--radius)] bg-[color:var(--error-bg)] px-[var(--space-4)] py-[var(--space-3)] text-[color:var(--error)]"
 				>
-					{error}
+					{displayError}
 				</div>
 			)}
 			<div className="relative min-h-[var(--space-8)]">
@@ -66,6 +80,9 @@ export function TodoList({ todos, isInitialLoading, highlightedId }: TodoListPro
 										todo={todo}
 										highlighted={todo.id === highlightedId}
 										onError={handleError}
+										onDelete={onDelete}
+										isExiting={exitingIds?.has(todo.id)}
+										isEntering={enteringIds?.has(todo.id)}
 									/>
 								))}
 							</ul>

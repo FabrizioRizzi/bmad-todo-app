@@ -226,6 +226,49 @@
 	animation: todo-skeleton-pulse var(--duration-skeleton-pulse) ease-in-out infinite;
 }
 
+/* Delete / undo card animations (Story 2.2) */
+.todo-card-exit-delete {
+	transform: translateX(100px);
+	opacity: 0;
+	transition:
+		transform var(--duration-exit) var(--ease-exit),
+		opacity var(--duration-exit) var(--ease-exit);
+}
+
+.todo-card-enter {
+	transform: translateX(0);
+	opacity: 1;
+	transition:
+		transform var(--duration-enter) var(--ease-standard),
+		opacity var(--duration-enter) var(--ease-standard);
+}
+
+.todo-card-enter-initial {
+	transform: translateX(-20px);
+	opacity: 0;
+}
+
+/* Undo toast animations (Story 2.2) */
+@keyframes undo-toast-slide-up {
+	from {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+.undo-toast-enter {
+	animation: undo-toast-slide-up var(--duration-exit) var(--ease-standard) forwards;
+}
+
+.undo-toast-exit {
+	opacity: 0;
+	transition: opacity var(--duration-exit) var(--ease-standard);
+}
+
 @layer base {
 	* {
 		@apply border-border outline-ring/50;

@@ -1,5 +1,5 @@
 # generated: 2026-04-07
-# last_updated: 2026-04-08 (epic-1 retrospective → done)
+# last_updated: 2026-04-08 (code review 2-2 complete, status → done)
 # project: bmad-todo-app
 # project_key: NOKEY
 # tracking_system: file-system
@@ -37,7 +37,7 @@
 generated: 2026-04-07
 last_updated: 2026-04-08
 project: bmad-todo-app
-# last_updated by: code-review 2-1
+# last_updated by: create-story epic-3 (3-1, 3-2, 3-3)
 project_key: NOKEY
 tracking_system: file-system
 story_location: "{project-root}/_bmad-output/implementation-artifacts"
@@ -55,15 +55,15 @@ development_status:
   # Epic 2: Complete Task Lifecycle
   epic-2: in-progress
   2-1-toggle-todo-completion: done
-  2-2-delete-todo-with-undo: ready-for-dev
+  2-2-delete-todo-with-undo: done
   2-3-error-banner-component: ready-for-dev
   epic-2-retrospective: optional
 
   # Epic 3: Due Dates & Organization
-  epic-3: backlog
-  3-1-due-date-support: backlog
-  3-2-filter-todos-by-status: backlog
-  3-3-sort-todos: backlog
+  epic-3: in-progress
+  3-1-due-date-support: ready-for-dev
+  3-2-filter-todos-by-status: ready-for-dev
+  3-3-sort-todos: ready-for-dev
   epic-3-retrospective: optional
 
   # Epic 4: Polish, Accessibility & Responsive Design

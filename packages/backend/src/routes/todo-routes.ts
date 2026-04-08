@@ -123,6 +123,41 @@ const todoRoutesPlugin: FastifyPluginAsyncZod = async (fastify) => {
 			return reply.status(200).send(toTodoDto(row));
 		},
 	);
+
+	fastify.delete(
+		'/api/todos/:id',
+		{
+			schema: {
+				params: z.object({ id: z.uuid() }),
+				response: {
+					204: z.undefined(),
+					404: z.object({
+						statusCode: z.literal(404),
+						error: z.literal('Not Found'),
+						message: z.literal('Todo not found'),
+					}),
+				},
+			},
+		},
+		async (request, reply) => {
+			const { id } = request.params;
+
+			const deleted = await fastify.db
+				.delete(todos)
+				.where(eq(todos.id, id))
+				.returning({ id: todos.id });
+
+			if (deleted.length === 0) {
+				return reply.status(404).send({
+					statusCode: 404,
+					error: 'Not Found',
+					message: 'Todo not found',
+				});
+			}
+
+			return reply.status(204).send();
+		},
+	);
 };
 
 export default fp(todoRoutesPlugin, { name: 'todo-routes' });

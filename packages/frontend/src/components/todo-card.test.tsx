@@ -100,4 +100,43 @@ describe('TodoCard', () => {
 		const card = screen.getByText('Test todo').closest('.todo-card-bar');
 		expect(card).not.toHaveAttribute('data-highlighted', 'true');
 	});
+
+	it('renders delete button when onDelete is provided', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} onDelete={vi.fn()} />);
+		const deleteBtn = screen.getByRole('button', { name: /Delete:/ });
+		expect(deleteBtn).toBeInTheDocument();
+	});
+
+	it('does not render delete button when onDelete is not provided', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} />);
+		const deleteBtn = screen.queryByRole('button', { name: /Delete:/ });
+		expect(deleteBtn).not.toBeInTheDocument();
+	});
+
+	it('calls onDelete with todo id when delete button is clicked', async () => {
+		const user = userEvent.setup();
+		const onDelete = vi.fn();
+		renderWithQueryClient(<TodoCard todo={mockTodo} onDelete={onDelete} />);
+
+		await user.click(screen.getByRole('button', { name: /Delete:/ }));
+		expect(onDelete).toHaveBeenCalledWith('1');
+	});
+
+	it('delete button has correct aria-label', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} onDelete={vi.fn()} />);
+		const deleteBtn = screen.getByRole('button', { name: 'Delete: Test todo' });
+		expect(deleteBtn).toBeInTheDocument();
+	});
+
+	it('applies exit animation class when isExiting is true', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} isExiting={true} />);
+		const li = screen.getByText('Test todo').closest('li');
+		expect(li).toHaveClass('todo-card-exit-delete');
+	});
+
+	it('does not apply exit animation class when isExiting is false', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} isExiting={false} />);
+		const li = screen.getByText('Test todo').closest('li');
+		expect(li).not.toHaveClass('todo-card-exit-delete');
+	});
 });

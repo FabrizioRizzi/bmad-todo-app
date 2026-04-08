@@ -1,12 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AddInput } from '@/components/add-input';
 import { AppHeader } from '@/components/app-header';
 import { TodoList } from '@/components/todo-list';
-import { useTodosQuery } from '@/hooks/use-todos';
+import { UndoToast } from '@/components/undo-toast';
+import { useDeleteTodo, useTodosQuery } from '@/hooks/use-todos';
 
 export function App() {
 	const { data: todos = [], isPending, isError } = useTodosQuery();
 	const [highlightedId, setHighlightedId] = useState<string | null>(null);
+	const [deleteError, setDeleteError] = useState<string | null>(null);
+	const deleteErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const handleDeleteError = useCallback((message: string) => {
+		setDeleteError(message);
+		if (deleteErrorTimerRef.current) clearTimeout(deleteErrorTimerRef.current);
+		deleteErrorTimerRef.current = setTimeout(() => setDeleteError(null), 3000);
+	}, []);
+
+	const { requestDelete, undoDelete, dismissToast, toastState, exitingIds, enteringIds } =
+		useDeleteTodo(handleDeleteError);
 
 	useEffect(() => {
 		if (!highlightedId) return;
@@ -36,10 +48,19 @@ export function App() {
 							Could not load todos — please try again later.
 						</p>
 					) : (
-						<TodoList highlightedId={highlightedId} isInitialLoading={isPending} todos={todos} />
+						<TodoList
+							highlightedId={highlightedId}
+							isInitialLoading={isPending}
+							todos={todos}
+							onDelete={requestDelete}
+							exitingIds={exitingIds}
+							enteringIds={enteringIds}
+							externalError={deleteError}
+						/>
 					)}
 				</section>
 			</main>
+			<UndoToast state={toastState} onUndo={undoDelete} onDismiss={dismissToast} />
 		</div>
 	);
 }

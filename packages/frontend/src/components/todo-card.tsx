@@ -5,9 +5,19 @@ type TodoCardProps = {
 	todo: Todo;
 	highlighted?: boolean;
 	onError?: (message: string) => void;
+	onDelete?: (id: string) => void;
+	isExiting?: boolean;
+	isEntering?: boolean;
 };
 
-export function TodoCard({ todo, highlighted = false, onError }: TodoCardProps) {
+export function TodoCard({
+	todo,
+	highlighted = false,
+	onError,
+	onDelete,
+	isExiting = false,
+	isEntering = false,
+}: TodoCardProps) {
 	const toggleMutation = useToggleTodoMutation();
 	const isPending = toggleMutation.isPending;
 
@@ -22,10 +32,16 @@ export function TodoCard({ todo, highlighted = false, onError }: TodoCardProps) 
 		}
 	};
 
+	const animationClass = isExiting
+		? 'todo-card-exit-delete'
+		: isEntering
+			? 'todo-card-enter todo-card-enter-initial'
+			: '';
+
 	return (
-		<li>
+		<li className={animationClass}>
 			<div
-				className={`todo-card-bar rounded-[var(--radius)] border border-[color:var(--border)] border-l-[3px] border-l-[color:var(--active-bar)] bg-[color:var(--active-bg)] py-[var(--space-4)] pr-[var(--space-4)] pl-[var(--space-3)] ${
+				className={`group todo-card-bar rounded-[var(--radius)] border border-[color:var(--border)] border-l-[3px] border-l-[color:var(--active-bar)] bg-[color:var(--active-bg)] py-[var(--space-4)] pr-[var(--space-4)] pl-[var(--space-3)] ${
 					todo.isCompleted ? 'todo-card-completed' : ''
 				}`}
 				data-highlighted={highlighted ? 'true' : undefined}
@@ -59,6 +75,29 @@ export function TodoCard({ todo, highlighted = false, onError }: TodoCardProps) 
 					<p className="todo-card-text flex-1 text-[color:var(--text-primary)] text-[length:var(--text-base)] leading-[var(--text-base-leading)]">
 						{todo.description}
 					</p>
+					{onDelete && (
+						<button
+							type="button"
+							onClick={() => onDelete(todo.id)}
+							aria-label={`Delete: ${todo.description}`}
+							className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-[color:var(--text-secondary)] transition-all duration-[var(--duration-fast)] hover:bg-[color:var(--error-bg)] hover:text-[color:var(--error)] opacity-50 lg:opacity-0 lg:group-hover:opacity-100"
+						>
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M18 6L6 18" />
+								<path d="M6 6l12 12" />
+							</svg>
+						</button>
+					)}
 				</div>
 			</div>
 		</li>

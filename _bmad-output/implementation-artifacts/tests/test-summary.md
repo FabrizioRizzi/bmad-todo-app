@@ -1,70 +1,75 @@
 # Test Automation Summary
 
-**Date:** 2026-04-08
-**Project:** bmad-todo-app
-**Framework:** Playwright v1.59.1
+Generated: 2026-04-08
 
----
+## Bug Fix
 
-## Generated / Fixed Tests
+### Redundant inline error in AddInput (Story 2.3 regression)
+
+The Story 2.3 implementation centralized error handling into the `ErrorBanner` component but left a redundant inline error state in `AddInput`. When a create mutation failed, two error messages appeared simultaneously:
+
+1. `AddInput` inline `<p role="alert">` — "Couldn't add that task — try again."
+2. `ErrorBanner` component — "Couldn't add that task — check your connection and try again."
+
+This caused Playwright strict mode violations in 2 existing e2e tests (`todos.spec.ts` lines 177, 196) because `text=Couldn't add that task` matched both elements.
+
+**Fix applied:**
+- Removed redundant `error` state and inline error rendering from `packages/frontend/src/components/add-input.tsx`
+- Updated `e2e/todos.spec.ts` to use `[data-testid="error-banner"]` locator instead of broad text match
+
+## Generated Tests
 
 ### E2E Tests
+- [x] `e2e/error-banner.spec.ts` — Story 2.3 Error Banner Component (10 tests)
+  - Shows create error banner with correct message when create fails
+  - Shows toggle error banner with correct message when toggle fails
+  - Shows delete error banner with correct message when delete fails
+  - Error banner has `role="alert"` and `aria-live="assertive"`
+  - Error banner contains warning icon (⚠)
+  - Error banner is positioned between input and todo list
+  - Auto-dismisses after 8 seconds
+  - Dismisses on successful action
+  - New error replaces previous error (no stacking)
+  - Error banner preserves input value on create failure
 
-- [x] `e2e/example.spec.ts` - Homepage smoke test (1 test)
-- [x] `e2e/todos.spec.ts` - Create and View List (14 tests)
-- [x] `e2e/toggle-todo-completion.spec.ts` - Toggle Todo Completion (7 tests) **FIXED**
-
-### Changes Made
-
-#### `e2e/playwright.config.ts`
-- Added sandbox detection: when `PLAYWRIGHT_BROWSERS_PATH` points to `cursor-sandbox-cache`, the config falls back to `channel: 'chrome'` (system Chrome) instead of the bundled Chromium
-- This avoids the architecture mismatch where the sandbox caches x64 binaries on an ARM64 Mac
-
-#### `e2e/toggle-todo-completion.spec.ts`
-- **Fixed broken locators**: replaced fragile `checkbox.locator('..').locator('..')` parent traversal with robust `todoCard()` helper using XPath `ancestor::div[contains(@class,"todo-card-bar")]`
-- **Fixed test isolation**: replaced `page.locator('input[type="checkbox"]').first()` with `todoCheckbox()` helper that targets the specific todo's checkbox via `aria-label`, preventing interference from other parallel tests or leftover DB state
-- **All 7 tests now pass reliably** in parallel execution
+### Existing E2E Tests (fixed)
+- [x] `e2e/todos.spec.ts` — Updated 2 tests to use specific ErrorBanner locators
 
 ## Coverage
 
-- **E2E test files:** 3
-- **Total E2E tests:** 22 (all passing)
-- **UI features covered:**
-  - Homepage load & header display
-  - Todo creation (Enter key + button click)
-  - Input validation (empty, whitespace)
-  - Count badge updates
-  - Input clearing after submit
-  - Focus management
-  - Multiple todo display
-  - Error handling (creation failure)
-  - Input preservation on error
-  - Todo persistence across reload
-  - Toggle completion (active → completed)
-  - Toggle completion (completed → active)
-  - Optimistic update + error revert
-  - Independent multi-todo toggling
-  - Checkbox accessibility attributes
+### E2E Tests by Story
+| Story | File | Tests | Status |
+|-------|------|-------|--------|
+| 1.5 - Create Todo & View List | `e2e/todos.spec.ts` | 14 | ✅ Pass |
+| 2.1 - Toggle Todo Completion | `e2e/toggle-todo-completion.spec.ts` | 7 | ✅ Pass |
+| 2.2 - Delete Todo with Undo | `e2e/delete-todo.spec.ts` | 9 | ✅ Pass |
+| 2.3 - Error Banner Component | `e2e/error-banner.spec.ts` | 10 | ✅ Pass |
+| Smoke | `e2e/example.spec.ts` | 1 | ✅ Pass |
+| **Total** | | **41** | **✅ All pass** |
 
-## Cursor Sandbox Limitation
+### Story 2.3 Acceptance Criteria Coverage
+| AC# | Description | E2E Test |
+|-----|-------------|----------|
+| 1 | Error banner positioning | `error banner is positioned between input and todo list` |
+| 2 | Error banner animations | Covered by enter/exit class presence (unit tests) |
+| 3 | Auto-dismiss after 8 seconds | `auto-dismisses after 8 seconds` |
+| 4 | Dismiss on success | `dismisses on successful action` |
+| 5 | Error replacement (no stacking) | `new error replaces previous error (no stacking)` |
+| 6 | Create error message | `shows create error banner with correct message when create fails` |
+| 7 | Toggle error message | `shows toggle error banner with correct message when toggle fails` |
+| 8 | Delete error message | `shows delete error banner with correct message when delete fails` |
+| 9 | Accessibility (aria live alert) | `error banner has role="alert" and aria-live="assertive"` |
+| 10 | Component tests | 13 unit tests in `error-banner.test.tsx` + 5 in `app.test.tsx` |
 
-**E2E tests cannot run inside the Cursor IDE default sandbox.** The sandbox:
-1. Sets `PLAYWRIGHT_BROWSERS_PATH` to a cache dir with **x64** Chromium on an **ARM64** Mac
-2. Restricts process spawning — even system Chrome (SIGABRT + `kill EPERM`)
-
-### Workaround
-
-Run E2E tests with `required_permissions: ["all"]` to disable the sandbox:
-
-```bash
-# From Cursor agent: use required_permissions: ["all"]
-# From terminal: run normally
-pnpm test:e2e
-```
-
-The `channel: 'chrome'` fallback in the Playwright config ensures the correct browser binary is used regardless of the `PLAYWRIGHT_BROWSERS_PATH` env var.
+### Full Test Suite
+| Suite | Tests | Status |
+|-------|-------|--------|
+| Backend (Vitest) | 20 | ✅ Pass |
+| Frontend (Vitest) | 53 | ✅ Pass |
+| E2E (Playwright) | 41 | ✅ Pass |
+| Lint (Biome) | — | ✅ 0 errors |
+| **Total** | **114** | **✅ All pass** |
 
 ## Next Steps
-
-- Run tests in CI (GitHub Actions, etc.) — no special config needed
-- The sandbox limitation is a Cursor platform issue, not a project issue
+- Run tests in CI
+- Story 2.3 can proceed from `review` to `done`

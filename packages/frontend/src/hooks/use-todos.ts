@@ -66,7 +66,7 @@ type PendingDelete = {
 	timerId: ReturnType<typeof setTimeout>;
 };
 
-export function useDeleteTodo(onError?: (message: string) => void) {
+export function useDeleteTodo(onError?: () => void) {
 	const queryClient = useQueryClient();
 	const [toastState, setToastState] = useState<UndoToastState>(null);
 	const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
@@ -104,7 +104,7 @@ export function useDeleteTodo(onError?: (message: string) => void) {
 						return next;
 					});
 				}, 300);
-				onError?.("Couldn't delete that task — try again.");
+				onError?.();
 			}
 		},
 		[queryClient, onError],
@@ -130,7 +130,7 @@ export function useDeleteTodo(onError?: (message: string) => void) {
 			const currentTodos = queryClient.getQueryData<Todo[]>(todosQueryKey);
 			const removedTodo = currentTodos?.find((t) => t.id === todoId);
 			if (!removedTodo) {
-				onError?.('Todo not found');
+				onError?.();
 				return;
 			}
 

@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Todo } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { EmptyState } from './empty-state';
@@ -12,7 +11,8 @@ type TodoListProps = {
 	onDelete?: (id: string) => void;
 	exitingIds?: Set<string>;
 	enteringIds?: Set<string>;
-	externalError?: string | null;
+	onToggleError?: () => void;
+	onToggleSuccess?: () => void;
 };
 
 export function TodoList({
@@ -22,37 +22,14 @@ export function TodoList({
 	onDelete,
 	exitingIds,
 	enteringIds,
-	externalError,
+	onToggleError,
+	onToggleSuccess,
 }: TodoListProps) {
-	const [error, setError] = useState<string | null>(null);
-	const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const showSkeleton = isInitialLoading;
 	const showContent = !isInitialLoading;
 
-	useEffect(() => {
-		return () => {
-			if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-		};
-	}, []);
-
-	const handleError = useCallback((message: string) => {
-		setError(message);
-		if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-		errorTimerRef.current = setTimeout(() => setError(null), 3000);
-	}, []);
-
-	const displayError = error || externalError;
-
 	return (
 		<div className="relative">
-			{displayError && (
-				<div
-					role="status"
-					className="mb-[var(--space-4)] rounded-[var(--radius)] bg-[color:var(--error-bg)] px-[var(--space-4)] py-[var(--space-3)] text-[color:var(--error)]"
-				>
-					{displayError}
-				</div>
-			)}
 			<div className="relative min-h-[var(--space-8)]">
 				<div
 					aria-hidden={!showSkeleton}
@@ -79,7 +56,8 @@ export function TodoList({
 										key={todo.id}
 										todo={todo}
 										highlighted={todo.id === highlightedId}
-										onError={handleError}
+										onToggleError={onToggleError}
+										onToggleSuccess={onToggleSuccess}
 										onDelete={onDelete}
 										isExiting={exitingIds?.has(todo.id)}
 										isEntering={enteringIds?.has(todo.id)}

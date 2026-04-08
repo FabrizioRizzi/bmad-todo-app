@@ -188,9 +188,10 @@ test.describe('Todo App - Create and View List', () => {
 		await input.fill('Failing task');
 		await input.press('Enter');
 
-		// Error message should appear
-		const errorMsg = page.locator("text=Couldn't add that task");
+		// Error message should appear in the error banner
+		const errorMsg = page.locator('[data-testid="error-banner"]');
 		await expect(errorMsg).toBeVisible({ timeout: 10000 });
+		await expect(errorMsg).toContainText("Couldn't add that task");
 	});
 
 	test('preserves input value when submission fails', async ({ page }) => {
@@ -209,8 +210,10 @@ test.describe('Todo App - Create and View List', () => {
 		await input.fill(testValue);
 		await input.press('Enter');
 
-		// Wait for error
-		await page.locator("text=Couldn't add that task").waitFor({ state: 'visible', timeout: 10000 });
+		// Wait for error banner
+		await page
+			.locator('[data-testid="error-banner"]')
+			.waitFor({ state: 'visible', timeout: 10000 });
 
 		// Input should still have the value
 		await expect(input).toHaveValue(testValue);

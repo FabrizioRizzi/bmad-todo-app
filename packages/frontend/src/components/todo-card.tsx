@@ -4,7 +4,8 @@ import type { Todo } from '@/lib/api';
 type TodoCardProps = {
 	todo: Todo;
 	highlighted?: boolean;
-	onError?: (message: string) => void;
+	onToggleError?: () => void;
+	onToggleSuccess?: () => void;
 	onDelete?: (id: string) => void;
 	isExiting?: boolean;
 	isEntering?: boolean;
@@ -13,7 +14,8 @@ type TodoCardProps = {
 export function TodoCard({
 	todo,
 	highlighted = false,
-	onError,
+	onToggleError,
+	onToggleSuccess,
 	onDelete,
 	isExiting = false,
 	isEntering = false,
@@ -27,8 +29,9 @@ export function TodoCard({
 				id: todo.id,
 				isCompleted: e.target.checked,
 			});
+			onToggleSuccess?.();
 		} catch {
-			onError?.("Couldn't update that task — try again.");
+			onToggleError?.();
 		}
 	};
 

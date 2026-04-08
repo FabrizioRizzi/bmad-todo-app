@@ -1,21 +1,35 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AddInput } from '@/components/add-input';
 import { AppHeader } from '@/components/app-header';
+import { ErrorBanner } from '@/components/error-banner';
 import { TodoList } from '@/components/todo-list';
 import { UndoToast } from '@/components/undo-toast';
 import { useDeleteTodo, useTodosQuery } from '@/hooks/use-todos';
 
+export type ErrorActionType = 'create' | 'toggle' | 'delete';
+
+const ERROR_MESSAGES: Record<ErrorActionType, string> = {
+	create: "Couldn't add that task — check your connection and try again.",
+	toggle: "Couldn't update that task — try again.",
+	delete: "Couldn't delete that task — try again.",
+};
+
 export function App() {
 	const { data: todos = [], isPending, isError } = useTodosQuery();
 	const [highlightedId, setHighlightedId] = useState<string | null>(null);
-	const [deleteError, setDeleteError] = useState<string | null>(null);
-	const deleteErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-	const handleDeleteError = useCallback((message: string) => {
-		setDeleteError(message);
-		if (deleteErrorTimerRef.current) clearTimeout(deleteErrorTimerRef.current);
-		deleteErrorTimerRef.current = setTimeout(() => setDeleteError(null), 3000);
+	const clearError = useCallback(() => {
+		setErrorMessage(null);
 	}, []);
+
+	const showError = useCallback((actionType: ErrorActionType) => {
+		setErrorMessage(ERROR_MESSAGES[actionType]);
+	}, []);
+
+	const handleDeleteError = useCallback(() => {
+		showError('delete');
+	}, [showError]);
 
 	const { requestDelete, undoDelete, dismissToast, toastState, exitingIds, enteringIds } =
 		useDeleteTodo(handleDeleteError);
@@ -34,8 +48,19 @@ export function App() {
 					aria-label="Add new todo"
 					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] bg-[color:var(--surface)] p-[var(--space-4)] shadow-[var(--shadow-soft)]"
 				>
-					<AddInput onCreated={(todo) => setHighlightedId(todo.id)} />
+					<AddInput
+						onCreated={(todo) => {
+							setHighlightedId(todo.id);
+							clearError();
+						}}
+						onError={() => showError('create')}
+					/>
 				</section>
+				{errorMessage && (
+					<div className="mt-[var(--space-3)]">
+						<ErrorBanner message={errorMessage} onDismiss={clearError} />
+					</div>
+				)}
 				<section
 					aria-label="Todo list"
 					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] bg-[color:var(--surface)] p-[var(--space-4)] shadow-[var(--shadow-soft)]"
@@ -55,7 +80,8 @@ export function App() {
 							onDelete={requestDelete}
 							exitingIds={exitingIds}
 							enteringIds={enteringIds}
-							externalError={deleteError}
+							onToggleError={() => showError('toggle')}
+							onToggleSuccess={clearError}
 						/>
 					)}
 				</section>

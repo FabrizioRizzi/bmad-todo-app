@@ -21,6 +21,14 @@ Welcome! This folder contains all the design, architecture, and implementation g
   - Monorepo structure and deployment model
 - **project-context.md** - Project goals, constraints, and technical decisions (if created)
 
+### AI Agent Guidance
+- **[MODEL_SELECTION_STRATEGY.md](./MODEL_SELECTION_STRATEGY.md)** - **START HERE FOR SPRINT PLANNING**
+  - Which model to use for each task type (Opus 4.6 vs. Auto vs. Human)
+  - Decision criteria and cost-quality tradeoffs
+  - Story assignment recommendations for current epics
+  - ROI analysis and measurement framework
+  - Rules of thumb for model selection
+
 ---
 
 ## 🎯 Quick Navigation

@@ -1,0 +1,16 @@
+export function AppHeader() {
+	return (
+		<header className="flex items-center justify-between border-[color:var(--border)] border-b pb-[var(--space-4)]">
+			<h1 className="text-[color:var(--text-primary)] text-[length:var(--text-xl)] leading-[var(--text-xl-leading)] [font-weight:var(--text-xl-weight)]">
+				bmad-todo-app
+			</h1>
+			<div
+				aria-label="Todo count"
+				className="rounded-[9999px] bg-[color:var(--accent-subtle)] px-[var(--space-3)] py-[var(--space-1)] text-[color:var(--accent)] text-[length:var(--text-xs)] leading-[var(--text-xs-leading)] [font-weight:var(--text-xs-weight)]"
+				role="status"
+			>
+				0
+			</div>
+		</header>
+	);
+}

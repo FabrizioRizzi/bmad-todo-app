@@ -134,6 +134,12 @@ describe('TodoCard', () => {
 		expect(li).toHaveClass('todo-card-exit-delete');
 	});
 
+	it('applies enter animation class when isEntering is true', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} isEntering={true} />);
+		const li = screen.getByText('Test todo').closest('li');
+		expect(li).toHaveClass('todo-card-enter');
+	});
+
 	it('does not apply exit animation class when isExiting is false', () => {
 		renderWithQueryClient(<TodoCard todo={mockTodo} isExiting={false} />);
 		const li = screen.getByText('Test todo').closest('li');

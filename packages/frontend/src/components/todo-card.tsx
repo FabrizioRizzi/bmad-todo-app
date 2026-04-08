@@ -35,11 +35,7 @@ export function TodoCard({
 		}
 	};
 
-	const animationClass = isExiting
-		? 'todo-card-exit-delete'
-		: isEntering
-			? 'todo-card-enter todo-card-enter-initial'
-			: '';
+	const animationClass = isExiting ? 'todo-card-exit-delete' : isEntering ? 'todo-card-enter' : '';
 
 	return (
 		<li className={animationClass}>

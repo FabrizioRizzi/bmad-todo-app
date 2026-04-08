@@ -235,17 +235,19 @@
 		opacity var(--duration-exit) var(--ease-exit);
 }
 
-.todo-card-enter {
-	transform: translateX(0);
-	opacity: 1;
-	transition:
-		transform var(--duration-enter) var(--ease-standard),
-		opacity var(--duration-enter) var(--ease-standard);
+@keyframes todo-card-enter {
+	from {
+		transform: translateX(-20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
 }
 
-.todo-card-enter-initial {
-	transform: translateX(-20px);
-	opacity: 0;
+.todo-card-enter {
+	animation: todo-card-enter var(--duration-enter) var(--ease-standard) forwards;
 }
 
 /* Undo toast animations (Story 2.2) */

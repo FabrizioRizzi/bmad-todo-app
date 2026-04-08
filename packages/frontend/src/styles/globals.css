@@ -64,6 +64,8 @@
 	--duration-fast: 150ms;
 	--duration-normal: 200ms;
 	--duration-smooth: 250ms;
+	/* Skeleton list pulse (UX-DR9) — duration token only in CSS, not raw ms in TSX */
+	--duration-skeleton-pulse: 1.5s;
 	--duration-enter: 300ms;
 	--duration-exit: 200ms;
 	--ease-standard: ease-out;
@@ -184,6 +186,20 @@
 	--sidebar: var(--surface);
 	--sidebar-foreground: var(--foreground);
 	--sidebar-border: var(--border);
+}
+
+@keyframes todo-skeleton-pulse {
+	0%,
+	100% {
+		opacity: 0.45;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+.todo-skeleton-pulse {
+	animation: todo-skeleton-pulse var(--duration-skeleton-pulse) ease-in-out infinite;
 }
 
 @layer base {

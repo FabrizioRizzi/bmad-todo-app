@@ -15,3 +15,9 @@
 - `prefers-reduced-motion` uses `0.01ms` instead of `0s` — minor browser compat concern; `0s` is more correct for disabling motion.
 - Dark mode `.dark` overrides incomplete — missing overrides for `--accent`, `--accent-hover`, `--error`, `--error-bg`, `--active-bg`, `--active-bar`, `--completed-bg`, `--completed-bar`, `--toast-bg`, `--toast-text`, `--overdue`, `--overdue-bg`, `--overdue-bar`, `--success`, `--chart-*`. Would produce broken contrast if activated.
 - `--chart-*` tokens use raw hex duplicating existing tokens — e.g. `--chart-1: #c4654a` should be `--chart-1: var(--accent)`. Cosmetic maintenance risk.
+
+## Deferred from: code review of 1-5-create-todo-and-view-list (2026-04-08)
+
+- No input length validation — `AddInput` trims whitespace but imposes no max length on description. Backend also lacks `.max()` (deferred from story 1.3). Revisit when adding input length constraints.
+- `React.forwardRef` deprecation in React 19 — `Input` component uses `React.forwardRef` which is deprecated in React 19 where `ref` is a regular prop. Functional but will emit warnings. Revisit when upgrading React patterns.
+- No test coverage for API error responses — Neither `app.test.tsx` nor `add-input.test.tsx` test non-200 responses. Error handling UI is Epic 2 scope (ErrorBanner story 2-3). Add error path tests alongside that story.

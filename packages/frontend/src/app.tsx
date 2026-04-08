@@ -1,33 +1,43 @@
+import { useEffect, useState } from 'react';
+import { AddInput } from '@/components/add-input';
 import { AppHeader } from '@/components/app-header';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { TodoList } from '@/components/todo-list';
+import { useTodosQuery } from '@/hooks/use-todos';
 
 export function App() {
+	const { data: todos = [], isPending, isError } = useTodosQuery();
+	const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (!highlightedId) return;
+		const timer = setTimeout(() => setHighlightedId(null), 2000);
+		return () => clearTimeout(timer);
+	}, [highlightedId]);
+
 	return (
 		<div className="min-h-screen bg-background">
 			<main className="mx-auto w-full max-w-[40rem] px-[var(--space-4)] py-[var(--space-8)] sm:px-[var(--space-6)]">
-				<AppHeader />
+				<AppHeader count={todos.length} />
 				<section
 					aria-label="Add new todo"
-					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] border-dashed bg-[color:var(--surface)] p-[var(--space-4)]"
+					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] bg-[color:var(--surface)] p-[var(--space-4)]"
 				>
-					<p className="text-[color:var(--text-secondary)] text-[length:var(--text-sm)] leading-[var(--text-sm-leading)]">
-						Input area — full add field in Story 1.5
-					</p>
-					<div className="mt-[var(--space-3)] flex gap-[var(--space-2)]">
-						<Input className="flex-1" disabled placeholder="New task (placeholder)" />
-						<Button disabled type="button">
-							Add
-						</Button>
-					</div>
+					<AddInput onCreated={(todo) => setHighlightedId(todo.id)} />
 				</section>
 				<section
 					aria-label="Todo list"
-					className="mt-[var(--space-5)] min-h-[var(--space-8)] rounded-[var(--radius)] border border-[color:var(--border)] border-dashed bg-[color:var(--surface)] p-[var(--space-4)]"
+					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] bg-[color:var(--surface)] p-[var(--space-4)]"
 				>
-					<p className="text-[color:var(--text-secondary)] text-[length:var(--text-sm)] leading-[var(--text-sm-leading)]">
-						List area — todos appear here in Story 1.5
-					</p>
+					{isError ? (
+						<p
+							className="py-[var(--space-4)] text-center text-[color:var(--error)] text-[length:var(--text-sm)] leading-[var(--text-sm-leading)]"
+							role="alert"
+						>
+							Could not load todos — please try again later.
+						</p>
+					) : (
+						<TodoList highlightedId={highlightedId} isInitialLoading={isPending} todos={todos} />
+					)}
 				</section>
 			</main>
 		</div>

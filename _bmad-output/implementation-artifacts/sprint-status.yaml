@@ -53,10 +53,10 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: Complete Task Lifecycle
-  epic-2: backlog
-  2-1-toggle-todo-completion: backlog
-  2-2-delete-todo-with-undo: backlog
-  2-3-error-banner-component: backlog
+  epic-2: in-progress
+  2-1-toggle-todo-completion: ready-for-dev
+  2-2-delete-todo-with-undo: ready-for-dev
+  2-3-error-banner-component: ready-for-dev
   epic-2-retrospective: optional
 
   # Epic 3: Due Dates & Organization

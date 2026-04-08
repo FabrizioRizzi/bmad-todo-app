@@ -1,9 +1,11 @@
-import { asc } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import { todos } from '../schema/todos.js';
 import {
 	createTodoBodySchema,
+	patchTodoBodySchema,
 	postTodo400ResponseSchema,
 	todoListResponseSchema,
 	todoResponseSchema,
@@ -76,6 +78,49 @@ const todoRoutesPlugin: FastifyPluginAsyncZod = async (fastify) => {
 				.from(todos)
 				.orderBy(asc(todos.createdAt), asc(todos.id));
 			return reply.status(200).send(rows.map(toTodoDto));
+		},
+	);
+
+	fastify.patch(
+		'/api/todos/:id',
+		{
+			schema: {
+				params: z.object({ id: z.uuid() }),
+				body: patchTodoBodySchema,
+				response: {
+					200: todoResponseSchema,
+					400: z.object({
+						statusCode: z.literal(400),
+						error: z.literal('Bad Request'),
+						message: z.string(),
+					}),
+					404: z.object({
+						statusCode: z.literal(404),
+						error: z.literal('Not Found'),
+						message: z.literal('Todo not found'),
+					}),
+				},
+			},
+		},
+		async (request, reply) => {
+			const { id } = request.params;
+			const { isCompleted } = request.body;
+
+			const [row] = await fastify.db
+				.update(todos)
+				.set({ isCompleted })
+				.where(eq(todos.id, id))
+				.returning();
+
+			if (!row) {
+				return reply.status(404).send({
+					statusCode: 404,
+					error: 'Not Found',
+					message: 'Todo not found',
+				});
+			}
+
+			return reply.status(200).send(toTodoDto(row));
 		},
 	);
 };

@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../app.js';
 import dbPlugin from '../plugins/db.js';
@@ -184,5 +185,78 @@ describe('todo routes', () => {
 
 		expect(response.statusCode).toBe(201);
 		expect(response.json()).not.toHaveProperty('extraField');
+	});
+
+	it('PATCH /api/todos/:id with isCompleted true updates todo and returns 200', async () => {
+		const createResponse = await app.inject({
+			method: 'POST',
+			url: '/api/todos',
+			payload: { description: 'Buy groceries' },
+		});
+		const todoId = createResponse.json().id as string;
+
+		const patchResponse = await app.inject({
+			method: 'PATCH',
+			url: `/api/todos/${todoId}`,
+			payload: { isCompleted: true },
+		});
+
+		expect(patchResponse.statusCode).toBe(200);
+		const body = patchResponse.json();
+		expect(body).toMatchObject({
+			id: todoId,
+			description: 'Buy groceries',
+			isCompleted: true,
+			dueDate: null,
+		});
+		expect(body).not.toHaveProperty('userId');
+
+		const dbRow = await app.db
+			.select()
+			.from(todos)
+			.where((t) => eq(t.id, todoId));
+		expect(dbRow[0].isCompleted).toBe(true);
+	});
+
+	it('PATCH /api/todos/:id with isCompleted false updates todo and returns 200', async () => {
+		const createResponse = await app.inject({
+			method: 'POST',
+			url: '/api/todos',
+			payload: { description: 'Task', isCompleted: true },
+		});
+		const todoId = createResponse.json().id as string;
+
+		const patchResponse = await app.inject({
+			method: 'PATCH',
+			url: `/api/todos/${todoId}`,
+			payload: { isCompleted: false },
+		});
+
+		expect(patchResponse.statusCode).toBe(200);
+		expect(patchResponse.json()).toMatchObject({
+			isCompleted: false,
+		});
+
+		const dbRow = await app.db
+			.select()
+			.from(todos)
+			.where((t) => eq(t.id, todoId));
+		expect(dbRow[0].isCompleted).toBe(false);
+	});
+
+	it('PATCH /api/todos/:id with non-existent ID returns 404', async () => {
+		const fakeId = '550e8400-e29b-41d4-a716-446655440000';
+		const response = await app.inject({
+			method: 'PATCH',
+			url: `/api/todos/${fakeId}`,
+			payload: { isCompleted: true },
+		});
+
+		expect(response.statusCode).toBe(404);
+		expect(response.json()).toEqual({
+			statusCode: 404,
+			error: 'Not Found',
+			message: 'Todo not found',
+		});
 	});
 });

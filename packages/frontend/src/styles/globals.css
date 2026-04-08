@@ -192,6 +192,26 @@
 	--sidebar-border: var(--border);
 }
 
+.todo-card-bar {
+	transition:
+		background-color var(--duration-normal) var(--ease-standard),
+		border-left-color var(--duration-normal) var(--ease-standard);
+}
+
+.todo-card-completed {
+	background-color: var(--completed-bg);
+	border-left-color: var(--completed-bar);
+}
+
+.todo-card-text {
+	transition: color var(--duration-normal) var(--ease-standard);
+}
+
+.todo-card-completed .todo-card-text {
+	color: var(--text-completed);
+	text-decoration: line-through;
+}
+
 @keyframes todo-skeleton-pulse {
 	0%,
 	100% {

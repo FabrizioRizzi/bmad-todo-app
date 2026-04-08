@@ -6,6 +6,10 @@ export const createTodoBodySchema = z.object({
 	dueDate: z.union([z.iso.date(), z.null()]).optional(),
 });
 
+export const patchTodoBodySchema = z.object({
+	isCompleted: z.boolean(),
+});
+
 export const todoResponseSchema = z.object({
 	id: z.uuid(),
 	description: z.string(),

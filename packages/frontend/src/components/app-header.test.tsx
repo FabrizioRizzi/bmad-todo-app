@@ -5,7 +5,7 @@ import { AppHeader } from './app-header';
 describe('AppHeader', () => {
 	it('shows title and count placeholder', () => {
 		render(<AppHeader count={0} />);
-		expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('bmad-todo-app');
-		expect(screen.getByRole('status', { name: /todo count/i })).toHaveTextContent('0');
+		expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('My Tasks');
+		expect(screen.getByRole('status', { name: /todo count/i })).toHaveTextContent('0 remaining');
 	});
 });

@@ -21,3 +21,11 @@
 - No input length validation — `AddInput` trims whitespace but imposes no max length on description. Backend also lacks `.max()` (deferred from story 1.3). Revisit when adding input length constraints.
 - `React.forwardRef` deprecation in React 19 — `Input` component uses `React.forwardRef` which is deprecated in React 19 where `ref` is a regular prop. Functional but will emit warnings. Revisit when upgrading React patterns.
 - No test coverage for API error responses — Neither `app.test.tsx` nor `add-input.test.tsx` test non-200 responses. Error handling UI is Epic 2 scope (ErrorBanner story 2-3). Add error path tests alongside that story.
+
+## Deferred from: code review of 2-1-toggle-todo-completion (2026-04-08)
+
+- W1: Checkmark SVG conditionally rendered — appears/disappears instantly instead of transitioning. Requires design decision on animation approach (CSS opacity vs. always-mounted SVG).
+- W2: `transition-all` on checkbox is overly broad — works correctly but not optimally scoped. Low risk.
+- W3: `text-decoration` is not animatable in CSS — transition declaration on `.todo-card-completed .todo-card-text` is a no-op. Strikethrough still applies, just doesn't animate.
+- W4: Global teardown calls DELETE endpoint not added in this story — may silently fail if endpoint doesn't exist. Pre-existing E2E infrastructure concern.
+- W5: `toggleTodo` does not `encodeURIComponent(id)` — IDs are server-generated UUIDs so URL-unsafe chars are not realistic. Defensive improvement for later.

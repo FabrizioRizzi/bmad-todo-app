@@ -28,7 +28,7 @@ describe('App', () => {
 
 	it('renders the app title in the header', () => {
 		renderWithQueryClient(<App />);
-		expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('bmad-todo-app');
+		expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('My Tasks');
 	});
 
 	it('shows todo count from loaded list', async () => {
@@ -43,7 +43,7 @@ describe('App', () => {
 		]);
 		renderWithQueryClient(<App />);
 		await waitFor(() => {
-			expect(screen.getByRole('status', { name: /todo count/i })).toHaveTextContent('1');
+			expect(screen.getByRole('status', { name: /todo count/i })).toHaveTextContent('1 remaining');
 		});
 	});
 

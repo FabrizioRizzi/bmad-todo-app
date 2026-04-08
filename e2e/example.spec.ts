@@ -5,7 +5,7 @@ test('homepage loads and displays the app header', async ({ page }) => {
 
 	// Wait for the app header to load
 	const header = page.locator('h1');
-	await expect(header).toHaveText('bmad-todo-app');
+	await expect(header).toHaveText('My Tasks');
 
 	// Verify the count badge is present
 	const countBadge = page.locator('[role="status"]');

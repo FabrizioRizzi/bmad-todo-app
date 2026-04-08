@@ -10,7 +10,7 @@ test.describe('Todo App - Create and View List', () => {
 
 	test('displays the app header with title and initial count', async ({ page }) => {
 		const header = page.locator('h1');
-		await expect(header).toHaveText('bmad-todo-app');
+		await expect(header).toHaveText('My Tasks');
 
 		const countBadge = page.locator('[role="status"]');
 		await expect(countBadge).toBeVisible();

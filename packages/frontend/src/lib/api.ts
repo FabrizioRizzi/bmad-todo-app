@@ -112,3 +112,24 @@ export async function createTodo(body: { description: string }): Promise<Todo> {
 	}
 	return data;
 }
+
+export async function toggleTodo(id: string, isCompleted: boolean): Promise<Todo> {
+	const res = await safeFetch(`/api/todos/${id}`, {
+		method: 'PATCH',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ isCompleted }),
+	});
+	if (!res.ok) {
+		const err = await parseErrorResponse(res);
+		throw new ApiRequestError(err);
+	}
+	const data: unknown = await res.json();
+	if (!isTodo(data)) {
+		throw new ApiRequestError({
+			statusCode: res.status,
+			error: 'ParseError',
+			message: 'Unexpected response shape from PATCH /api/todos/:id',
+		});
+	}
+	return data;
+}

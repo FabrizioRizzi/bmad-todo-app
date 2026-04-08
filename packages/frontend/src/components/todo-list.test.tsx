@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { Todo } from '@/lib/api';
@@ -20,9 +21,19 @@ const sampleTodos: Todo[] = [
 	},
 ];
 
+const renderWithQueryClient = (component: React.ReactNode) => {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: { retry: false },
+			mutations: { retry: false },
+		},
+	});
+	return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
+};
+
 describe('TodoList', () => {
 	it('shows skeleton placeholders while initial load is pending', () => {
-		const { container } = render(
+		const { container } = renderWithQueryClient(
 			<TodoList highlightedId={null} isInitialLoading={true} todos={[]} />,
 		);
 		expect(container.querySelector('.todo-skeleton-pulse')).toBeInTheDocument();
@@ -30,19 +41,23 @@ describe('TodoList', () => {
 	});
 
 	it('renders descriptions in API order when loaded', () => {
-		render(<TodoList highlightedId={null} isInitialLoading={false} todos={sampleTodos} />);
+		renderWithQueryClient(
+			<TodoList highlightedId={null} isInitialLoading={false} todos={sampleTodos} />,
+		);
 		const items = screen.getAllByText(/Alpha|Beta/);
 		expect(items[0]).toHaveTextContent('Alpha');
 		expect(items[1]).toHaveTextContent('Beta');
 	});
 
 	it('shows empty state when loaded with no todos', () => {
-		render(<TodoList highlightedId={null} isInitialLoading={false} todos={[]} />);
+		renderWithQueryClient(<TodoList highlightedId={null} isInitialLoading={false} todos={[]} />);
 		expect(screen.getByRole('status', { name: /no tasks yet/i })).toBeInTheDocument();
 	});
 
 	it('applies highlighted styling to the matching id', () => {
-		render(<TodoList highlightedId="2" isInitialLoading={false} todos={sampleTodos} />);
+		renderWithQueryClient(
+			<TodoList highlightedId="2" isInitialLoading={false} todos={sampleTodos} />,
+		);
 		expect(screen.getByText('Beta').closest('[data-highlighted="true"]')).toBeTruthy();
 		expect(screen.getByText('Alpha').closest('[data-highlighted="true"]')).toBeNull();
 	});

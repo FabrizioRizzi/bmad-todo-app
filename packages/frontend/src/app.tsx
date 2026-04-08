@@ -20,13 +20,13 @@ export function App() {
 				<AppHeader count={todos.length} />
 				<section
 					aria-label="Add new todo"
-					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] bg-[color:var(--surface)] p-[var(--space-4)]"
+					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] bg-[color:var(--surface)] p-[var(--space-4)] shadow-[var(--shadow-soft)]"
 				>
 					<AddInput onCreated={(todo) => setHighlightedId(todo.id)} />
 				</section>
 				<section
 					aria-label="Todo list"
-					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] bg-[color:var(--surface)] p-[var(--space-4)]"
+					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] bg-[color:var(--surface)] p-[var(--space-4)] shadow-[var(--shadow-soft)]"
 				>
 					{isError ? (
 						<p

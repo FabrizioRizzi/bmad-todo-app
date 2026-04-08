@@ -2,12 +2,20 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
 	testDir: '.',
-	webServer: {
-		command: 'pnpm --filter frontend dev',
-		cwd: '..',
-		url: 'http://localhost:5173',
-		reuseExistingServer: !process.env.CI,
-	},
+	webServer: [
+		{
+			command: 'pnpm --filter backend dev',
+			cwd: '..',
+			url: 'http://localhost:3000/api/todos',
+			reuseExistingServer: !process.env.CI,
+		},
+		{
+			command: 'pnpm --filter frontend dev',
+			cwd: '..',
+			url: 'http://localhost:5173',
+			reuseExistingServer: !process.env.CI,
+		},
+	],
 	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,

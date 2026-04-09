@@ -3,9 +3,11 @@ import { AddInput } from '@/components/add-input';
 import { AppHeader } from '@/components/app-header';
 import { ErrorBanner } from '@/components/error-banner';
 import { FilterTabs, type TodoFilter } from '@/components/filter-tabs';
-import { TodoList } from '@/components/todo-list';
+import { SortRow, type TodoSort } from '@/components/sort-row';
+import { TodoList, todoMatchesFilter } from '@/components/todo-list';
 import { UndoToast } from '@/components/undo-toast';
 import { useDeleteTodo, useTodosQuery } from '@/hooks/use-todos';
+import { type DueSortDirection, sortByDueDate, sortByStatus } from '@/lib/utils';
 
 export type ErrorActionType = 'create' | 'toggle' | 'delete' | 'dueDate';
 
@@ -28,10 +30,18 @@ const getErrorMessage = (actionType: ErrorActionType): string => {
 export function App() {
 	const { data: todos = [], isPending, isError } = useTodosQuery();
 	const [filter, setFilter] = useState<TodoFilter>('all');
+	const [sort, setSort] = useState<TodoSort>('due');
+	const [statusDirection, setStatusDirection] = useState<'active-first' | 'completed-first'>(
+		'active-first',
+	);
+	const [dueDirection, setDueDirection] = useState<DueSortDirection>('ascending');
 	const [highlightedId, setHighlightedId] = useState<string | null>(null);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [filterAnnouncement, setFilterAnnouncement] = useState('');
 	const prevFilterForLiveRef = useRef<TodoFilter | null>(null);
+	/** Mirrors `sort` for click handlers — avoid calling setState inside another setState updater (Strict Mode runs updaters twice). */
+	const sortRef = useRef<TodoSort>(sort);
+	sortRef.current = sort;
 
 	const activeCount = useMemo(() => todos.filter((t) => !t.isCompleted).length, [todos]);
 	const completedCount = useMemo(() => todos.filter((t) => t.isCompleted).length, [todos]);
@@ -45,6 +55,56 @@ export function App() {
 		if (filter === 'active') return activeCount;
 		return completedCount;
 	}, [filter, todos.length, activeCount, completedCount]);
+
+	const filteredTodos = useMemo(
+		() => todos.filter((t) => todoMatchesFilter(t, filter)),
+		[todos, filter],
+	);
+
+	const sortedMatchingTodos = useMemo(() => {
+		if (sort === 'due') return sortByDueDate(filteredTodos, dueDirection);
+		return sortByStatus(filteredTodos, statusDirection);
+	}, [filteredTodos, sort, dueDirection, statusDirection]);
+
+	/** Stable key for sort-only list reorder (FLIP). Excludes filter so tab switches do not run sort animations. */
+	const sortLayoutKey = useMemo(
+		() => `${sort}:${dueDirection}:${statusDirection}`,
+		[sort, dueDirection, statusDirection],
+	);
+
+	const handleSortChange = useCallback((next: TodoSort) => {
+		if (next === 'due') {
+			if (sortRef.current === 'due') {
+				setDueDirection((d) => (d === 'ascending' ? 'descending' : 'ascending'));
+			} else {
+				setDueDirection('ascending');
+			}
+			setSort('due');
+			return;
+		}
+		if (sortRef.current === 'status') {
+			setStatusDirection((d) => (d === 'active-first' ? 'completed-first' : 'active-first'));
+		} else {
+			setStatusDirection('active-first');
+		}
+		setSort('status');
+	}, []);
+
+	const sortIsNonDefault = sort === 'status' || dueDirection === 'descending';
+
+	const handleResetSort = useCallback(() => {
+		setSort('due');
+		setDueDirection('ascending');
+		setStatusDirection('active-first');
+	}, []);
+
+	useEffect(() => {
+		if (filter === 'active' || filter === 'completed') {
+			setSort('due');
+			setStatusDirection('active-first');
+			setDueDirection('ascending');
+		}
+	}, [filter]);
 
 	useEffect(() => {
 		if (prevFilterForLiveRef.current === null) {
@@ -101,6 +161,27 @@ export function App() {
 				<div className="mt-[var(--space-4)] w-full">
 					<FilterTabs activeFilter={filter} counts={counts} onFilterChange={setFilter} />
 				</div>
+				<div className="mt-[var(--space-2)] flex w-full flex-wrap items-center gap-x-[var(--space-3)] gap-y-[var(--space-2)]">
+					<div className="min-w-0 flex-1">
+						<SortRow
+							activeSort={sort}
+							dueDirection={dueDirection}
+							filter={filter}
+							statusDirection={statusDirection}
+							onSortChange={handleSortChange}
+						/>
+					</div>
+					{sortIsNonDefault ? (
+						<button
+							type="button"
+							aria-label="Reset sort to due date, soonest first"
+							className="shrink-0 rounded-[var(--radius-sm)] border-none bg-transparent px-[var(--space-2)] py-[var(--space-2)] text-[length:var(--text-sm)] leading-[var(--text-sm-leading)] font-medium text-[color:var(--accent)] underline-offset-2 transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:underline"
+							onClick={handleResetSort}
+						>
+							Reset sort
+						</button>
+					) : null}
+				</div>
 				<div aria-live="polite" className="sr-only">
 					{filterAnnouncement}
 				</div>
@@ -120,6 +201,8 @@ export function App() {
 							filter={filter}
 							highlightedId={highlightedId}
 							isInitialLoading={isPending}
+							orderedMatchingTodos={sortedMatchingTodos}
+							sortLayoutKey={sortLayoutKey}
 							todos={todos}
 							onDelete={requestDelete}
 							exitingIds={exitingIds}

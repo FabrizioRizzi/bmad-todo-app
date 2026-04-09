@@ -30,6 +30,11 @@
 - W4: Global teardown calls DELETE endpoint not added in this story — may silently fail if endpoint doesn't exist. Pre-existing E2E infrastructure concern.
 - W5: `toggleTodo` does not `encodeURIComponent(id)` — IDs are server-generated UUIDs so URL-unsafe chars are not realistic. Defensive improvement for later.
 
+## Deferred from: code review of 3-3-sort-todos.md (2026-04-09)
+
+- `sortByDueDate` relies on string `localeCompare` for any non-null `dueDate` — if malformed ISO strings were ever stored, ordering vs valid dates would be arbitrary. Deferred on assumption that API/data only yields valid ISO dates or null.
+- TodoList FLIP uses inline `transform`/`transition`, double `requestAnimationFrame`, and per-element `transitionend` handlers — sensitive to DOM or animation changes; acceptable tradeoff for sort animation scope.
+
 ## Deferred from: code review of 3-1-due-date-support.md (2026-04-09)
 
 - React DayPicker often omits `onSelect` when the user clicks the already-selected day — cannot trigger a second PATCH for the same date without a different UX (e.g. explicit Apply) or library workaround. Deferred as library limitation unless product requires re-apply.

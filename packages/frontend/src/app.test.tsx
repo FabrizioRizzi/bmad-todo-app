@@ -529,4 +529,282 @@ describe('App – Todo filters', () => {
 			expect(live?.textContent).toBe('1 tasks shown');
 		});
 	});
+
+	it('shows Reset sort when sort is non-default and restores default without changing filter', async () => {
+		const user = userEvent.setup();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(
+							JSON.stringify([
+								{
+									id: 'a',
+									description: 'Still open',
+									isCompleted: false,
+									createdAt: '2026-01-01T00:00:00.000Z',
+									dueDate: null,
+								},
+								{
+									id: 'b',
+									description: 'Already done',
+									isCompleted: true,
+									createdAt: '2026-01-02T00:00:00.000Z',
+									dueDate: null,
+								},
+							]),
+							{
+								status: 200,
+								headers: { 'Content-Type': 'application/json' },
+							},
+						),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText('Still open')).toBeInTheDocument();
+		});
+		expect(screen.queryByRole('button', { name: /reset sort/i })).not.toBeInTheDocument();
+
+		await user.click(screen.getByRole('tab', { name: /active, 1 tasks/i }));
+
+		await waitFor(() => {
+			expect(screen.getByText('Still open')).toBeInTheDocument();
+		});
+		await waitFor(
+			() => {
+				expect(screen.queryByText('Already done')).not.toBeInTheDocument();
+			},
+			{ timeout: 2500 },
+		);
+
+		await user.click(screen.getByRole('button', { name: /sort by due date/i }));
+
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: /reset sort/i })).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByRole('button', { name: /reset sort/i }));
+
+		await waitFor(() => {
+			expect(screen.queryByRole('button', { name: /reset sort/i })).not.toBeInTheDocument();
+		});
+		expect(screen.getByRole('button', { name: /soonest due first/i })).toHaveTextContent('Due ↑');
+		expect(screen.getByText('Still open')).toBeInTheDocument();
+		await waitFor(
+			() => {
+				expect(screen.queryByText('Already done')).not.toBeInTheDocument();
+			},
+			{ timeout: 2500 },
+		);
+	});
+});
+
+describe('App – Sort todos', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	function descriptionsInListOrder() {
+		const region = screen.getByRole('region', { name: /todo list/i });
+		return [...region.querySelectorAll('.todo-card-text')].map(
+			(el) => el.textContent?.trim() ?? '',
+		);
+	}
+
+	it('orders by due date (soonest first, nulls last) when Due sort is active', async () => {
+		const user = userEvent.setup();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(
+							JSON.stringify([
+								{
+									id: 'late',
+									description: 'Later',
+									isCompleted: false,
+									createdAt: '2026-01-03T00:00:00.000Z',
+									dueDate: '2026-04-20',
+								},
+								{
+									id: 'none',
+									description: 'No due',
+									isCompleted: false,
+									createdAt: '2026-01-01T00:00:00.000Z',
+									dueDate: null,
+								},
+								{
+									id: 'soon',
+									description: 'Sooner',
+									isCompleted: false,
+									createdAt: '2026-01-02T00:00:00.000Z',
+									dueDate: '2026-04-05',
+								},
+							]),
+							{ status: 200, headers: { 'Content-Type': 'application/json' } },
+						),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(descriptionsInListOrder()).toEqual(['Sooner', 'Later', 'No due']);
+		});
+		expect(screen.getByRole('button', { name: /soonest due first/i })).toHaveTextContent('Due ↑');
+
+		await user.click(screen.getByRole('button', { name: /sort by due date/i }));
+		await waitFor(() => {
+			expect(descriptionsInListOrder()).toEqual(['Later', 'Sooner', 'No due']);
+		});
+		expect(screen.getByRole('button', { name: /latest due first/i })).toHaveTextContent('Due ↓');
+	});
+
+	it('groups active first when Status sort is chosen on All filter', async () => {
+		const user = userEvent.setup();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(
+							JSON.stringify([
+								{
+									id: 'done',
+									description: 'Done item',
+									isCompleted: true,
+									createdAt: '2026-01-01T00:00:00.000Z',
+									dueDate: null,
+								},
+								{
+									id: 'open',
+									description: 'Open item',
+									isCompleted: false,
+									createdAt: '2026-01-02T00:00:00.000Z',
+									dueDate: null,
+								},
+							]),
+							{ status: 200, headers: { 'Content-Type': 'application/json' } },
+						),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText('Open item')).toBeInTheDocument();
+		});
+		expect(descriptionsInListOrder()).toEqual(['Done item', 'Open item']);
+
+		await user.click(screen.getByRole('button', { name: /sort by status.*active tasks first/i }));
+
+		await waitFor(() => {
+			expect(descriptionsInListOrder()).toEqual(['Open item', 'Done item']);
+		});
+		expect(
+			screen.getByRole('button', { name: /sort by status.*active tasks first/i }),
+		).toHaveTextContent('Status ↑');
+
+		await user.click(screen.getByRole('button', { name: /sort by status/i }));
+		await waitFor(() => {
+			expect(descriptionsInListOrder()).toEqual(['Done item', 'Open item']);
+		});
+		expect(
+			screen.getByRole('button', { name: /sort by status.*completed tasks first/i }),
+		).toHaveTextContent('Status ↓');
+	});
+
+	it('resets to Due sort when filter is no longer All', async () => {
+		const user = userEvent.setup();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(
+							JSON.stringify([
+								{
+									id: 'a',
+									description: 'A',
+									isCompleted: false,
+									createdAt: '2026-01-01T00:00:00.000Z',
+									dueDate: null,
+								},
+								{
+									id: 'b',
+									description: 'B',
+									isCompleted: true,
+									createdAt: '2026-01-02T00:00:00.000Z',
+									dueDate: null,
+								},
+							]),
+							{ status: 200, headers: { 'Content-Type': 'application/json' } },
+						),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText('A')).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByRole('button', { name: /sort by status.*active tasks first/i }));
+		await waitFor(() => {
+			expect(
+				screen.getByRole('button', { name: /sort by status.*active tasks first/i }),
+			).toHaveAttribute('aria-pressed', 'true');
+		});
+
+		await user.click(screen.getByRole('tab', { name: /active, 1 tasks/i }));
+
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: /sort by due date/i })).toHaveAttribute(
+				'aria-pressed',
+				'true',
+			);
+		});
+		expect(screen.queryByRole('button', { name: /sort by status/i })).not.toBeInTheDocument();
+	});
 });

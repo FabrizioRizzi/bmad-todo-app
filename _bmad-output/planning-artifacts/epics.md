@@ -32,8 +32,8 @@ This document provides the complete epic and story breakdown for bmad-todo-app, 
 - FR8: User can add, change, or remove a due date on an existing todo.
 - FR9: System displays overdue visual indicator on active todos whose due date is in the past.
 - FR10: User can filter the todo list to show all todos, only active todos, or only completed todos.
-- FR11: User can sort todos by due date (todos without a due date appear last).
-- FR12: User can sort todos by completion status.
+- FR11: User can sort todos by due date (default soonest first; toggle latest first; no-due-date last; reset to default when non-default).
+- FR12: User can sort todos by completion status (all filter only; toggle active-first vs completed-first).
 - FR13: System prevents creation of a todo with an empty or whitespace-only description.
 - FR14: System displays a user-visible error message identifying the failed action when a network request fails.
 - FR15: System preserves the visible todo list and user context when an error occurs.
@@ -104,7 +104,7 @@ This document provides the complete epic and story breakdown for bmad-todo-app, 
 - UX-DR2: Build TodoCard component with 8 visual states — active (warm white bg + terracotta left bar), active+overdue (--overdue-bg + red left bar + "Overdue" badge), completed (muted stone bg + gray left bar + strikethrough + dimmed text + sage green checkbox), hovered-active/overdue/completed (elevated shadow), loading (pending indicator), animating in (slide+fade 300ms), animating out (slide+fade 200ms). Includes 3px left accent bar, due date badge with relative labels, conditional delete button visibility (hover on desktop, 50% opacity on mobile).
 - UX-DR3: Build AddInput composite component — borderless input field with soft shadow, terracotta 2px focus ring + glow, placeholder "Add a new task...", calendar icon button (ghost style) for optional due date with Shadcn Calendar+Popover, 50x50 terracotta add button with white "+", wrapped in `<form>` for native Enter submission. On success: clear input + due date, refocus. On failure: retain text + date, show error banner.
 - UX-DR4: Build FilterTabs component — full-width segmented tab bar (All / Active / Completed) with equal-width buttons, 2px terracotta underline on active tab that animates between positions, `role="tablist"` with `role="tab"` children, `aria-selected`, Left/Right arrow keyboard navigation, `aria-live="polite"` announcing count on filter change.
-- UX-DR5: Build SortRow component — "Sort by" label + "Due ↓" and "Status ↕" options with vertical divider, subtle background strip, `role="toolbar"` with `aria-label="Sort options"`, `aria-pressed` on sort buttons. Status sort hidden when filter is Active or Completed. "Due ↓" sorts soonest first with nulls last. "Status ↕" toggles active-first / completed-first.
+- UX-DR5: Build SortRow component — "Sort by" label + Due and Status sort controls with vertical divider, subtle background strip, `role="toolbar"` with `aria-label="Sort options"`, `aria-pressed` on sort buttons. Status sort hidden when filter is Active or Completed. **Due:** default soonest first (**Due ↑** when active); second click toggles latest due first (**Due ↓**); when Due is inactive, show **Due ↕**. **Status** (All only): **Status ↑** = active-first, **Status ↓** = completed-first; inactive **Status ↕**. **Reset sort** control when sort/direction is non-default — restores due date soonest-first without changing filter.
 - UX-DR6: Build EmptyState component — 4 context-specific variants: (1) No todos: ☑ icon + "No tasks yet" + "Type above and press Enter (or tap +) to add your first task.", (2) No active: 🔍 + "No active tasks" + "Add a task above to get started.", (3) No completed: 🔍 + "No completed tasks" + "Tasks you complete will appear here.", (4) Load failure: ⚠ + "Couldn't load your tasks" + "Check your connection and try again." Container: `role="status"`, `aria-live="polite"`, centered with --space-8 padding.
 - UX-DR7: Build ErrorBanner component — positioned between input and todo list, --error-bg background + --error text, 10px radius, warning icon (⚠) + action-specific message text, slide-down enter animation (200ms ease-out), auto-dismiss after 8s or next successful action, replaces (not stacks) previous error, `role="alert"` with `aria-live="assertive"`. Messages: create="Couldn't add that task — check your connection and try again.", toggle="Couldn't update that task — try again.", delete="Couldn't delete that task — try again.", load="Couldn't load your tasks — check your connection and try again."
 - UX-DR8: Build UndoToast component — dark warm gray (--toast-bg) background, warm white (--toast-text) text, terracotta "Undo" link, 12px radius, 5s auto-dismiss timer, slide-up enter (200ms ease-out), fade exit (200ms ease-out), only one toast visible at a time (new delete replaces previous), positioned bottom-center.
@@ -130,8 +130,8 @@ This document provides the complete epic and story breakdown for bmad-todo-app, 
 | FR8 | Epic 3 | Add/change/remove due date on existing |
 | FR9 | Epic 3 | Overdue visual indicator |
 | FR10 | Epic 3 | Filter by all/active/completed |
-| FR11 | Epic 3 | Sort by due date |
-| FR12 | Epic 3 | Sort by completion status |
+| FR11 | Epic 3 | Sort by due date (direction toggle, nulls last, reset) |
+| FR12 | Epic 3 | Sort by completion status (toggle order; All filter only) |
 | FR13 | Epic 1 | Prevent empty todo creation |
 | FR14 | Epic 2 | Error message on network failure |
 | FR15 | Epic 2 | Preserve list on error |
@@ -623,30 +623,41 @@ So that I can prioritize what needs attention first.
 **When** the SortRow component renders
 **Then** it appears below the filter tabs with a subtle background strip
 **And** it shows "Sort by" label in uppercase small secondary text
-**And** "Due ↓" and "Status ↕" options are displayed with a vertical divider between them
-**And** "Due ↓" is the active (default) sort with highlighted styling
+**And** "Due ↑" (default active label) and "Status ↕" options are displayed with a vertical divider between them when filter is All — **Due ↑** means due-date sort active, soonest first
+**And** the active sort control has highlighted styling
 
-**Given** the "Due ↓" sort is active
+**Given** due-date sort is active (soonest first — label **Due ↑**)
 **When** todos are displayed
 **Then** todos are sorted by due date, soonest first
 **And** todos without a due date appear last in the list
 
-**Given** the "Due ↓" sort is active
+**Given** due-date sort is active
+**When** I click the Due sort control again
+**Then** direction toggles to latest due first among dated items (label **Due ↓**), nulls still last
+**And** the list reorders with smooth animation (250ms ease-out)
+
+**Given** due-date sort is active but direction is not the default, or status sort is active
+**When** I use the **Reset sort** control
+**Then** sort returns to due date, soonest first (default)
+**And** the filter selection is unchanged
+
+**Given** the Due sort is active
 **When** I click "Status ↕"
-**Then** "Status ↕" becomes the active sort (highlighted styling)
+**Then** status sort becomes active (highlighted) with active-first order (label **Status ↑**)
 **And** the list reorders with smooth animation (250ms ease-out): active items group first, completed items group below
 
-**Given** "Status ↕" is active showing active-first order
-**When** I click "Status ↕" again
-**Then** the order toggles: completed items group first, active items group below
+**Given** status sort is active showing active-first order (**Status ↑**)
+**When** I click the Status sort control again
+**Then** the order toggles to completed-first (**Status ↓**)
 
 **Given** the filter is set to "Active" or "Completed"
 **When** the SortRow renders
-**Then** the "Status ↕" sort option is hidden (only "Due ↓" is shown — status sort is redundant when already filtered)
+**Then** the Status sort option is hidden (only Due sort is shown — status sort is redundant when already filtered)
+**And** sort mode resets to due-date per app rules when entering this filter
 
 **Given** the filter is set to "All"
 **When** the SortRow renders
-**Then** both "Due ↓" and "Status ↕" sort options are shown
+**Then** both Due and Status sort options are shown
 
 **Given** the SortRow component
 **When** rendered
@@ -659,7 +670,7 @@ So that I can prioritize what needs attention first.
 
 **Given** the sort functionality
 **When** tests are run
-**Then** co-located tests verify: sort row renders, active sort styling, due date sort order (nulls last), status sort toggle, status sort hidden when filtered
+**Then** co-located tests verify: sort row renders, active sort styling, due date sort order (nulls last) and direction toggle, status sort toggle, reset sort, status sort hidden when filtered
 
 ## Epic 4: Polish, Accessibility & Responsive Design
 

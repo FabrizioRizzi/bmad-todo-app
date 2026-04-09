@@ -1,6 +1,6 @@
 # Story 3.2: Filter Todos by Status
 
-Status: review
+Status: done
 
 ## Story
 
@@ -244,6 +244,8 @@ Cursor agent (GPT-5.1) — dev-story workflow
 - `TodoList`: takes full todo list + `filter`; tracks filter enter/exit sets on filter change for 250ms (`--duration-smooth`); `TodoCard` gains `isFilterExiting` / `isFilterEntering` with `.todo-list-item-motion`, `.todo-card-filter-exit`, `.todo-card-filter-enter` in `globals.css`. `id="todo-list"` wraps list or empty state so `aria-controls` always resolves.
 - Global `prefers-reduced-motion` rules shorten transitions site-wide (existing pattern).
 - Tests: new `filter-tabs.test.tsx`; expanded `empty-state`, `todo-list`, `app` tests. Quality gates: `pnpm --filter frontend test`, `pnpm lint`, `pnpm build` all pass.
+- **Follow-up (layout):** Filter exiting/entering IDs are computed **during render** when `filter` changes (avoids one paint with only “matching” rows, then exiting rows appearing — Active↔Completed list height jump). `renderTodos` orders **exiting rows before matching rows** so items leaving stay in the upper band during collapse.
+- **Local demo data:** `pnpm db:seed:demo` runs `packages/backend/src/scripts/seed-demo-todos.ts` (wipes todos, inserts 3 active + 1 completed) for manual QA.
 
 ### File List
 
@@ -258,6 +260,8 @@ Cursor agent (GPT-5.1) — dev-story workflow
 - `packages/frontend/src/app.test.tsx`
 - `packages/frontend/src/styles/globals.css`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `packages/backend/src/scripts/seed-demo-todos.ts` (demo seed; optional for QA)
+- Root / backend `package.json` — `db:seed:demo` script
 
 ### Review Findings
 
@@ -266,3 +270,4 @@ _To be filled by code review_
 ### Change Log
 
 - 2026-04-09: Story 3.2 — filter tabs, client-side filter state, empty-state variants, list filter animations, tests, sprint status → review
+- 2026-04-09: Filter transition layout fix (render-time exiting/entering IDs, exiting-first render order); demo seed script `db:seed:demo`; sprint status → done

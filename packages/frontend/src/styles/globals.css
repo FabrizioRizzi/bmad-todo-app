@@ -276,6 +276,35 @@
 		margin-block var(--duration-smooth) var(--ease-standard);
 }
 
+/*
+ * Delete exit + list row both set `transition` on the same `li`; the later `.todo-list-item-motion`
+ * rule would otherwise replace the delete rule and drop `transform` from the transition list,
+ * so the slide-out snaps. This compound selector restores a single merged transition.
+ */
+.todo-list-item-motion.todo-card-exit-delete {
+	transition:
+		transform var(--duration-exit) var(--ease-exit),
+		opacity var(--duration-exit) var(--ease-exit),
+		max-height var(--duration-exit) var(--ease-exit),
+		margin-block var(--duration-exit) var(--ease-exit);
+}
+
+/* Sort reorder FLIP target — transform only so filter transitions on `li` stay intact */
+.todo-sort-flip-target {
+	transition: transform var(--duration-smooth) ease-out;
+}
+
+/* During delete, parent `li` owns transform; inner transition would fight the slide-out */
+.todo-list-item-motion.todo-card-exit-delete .todo-sort-flip-target {
+	transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.todo-sort-flip-target {
+		transition: none;
+	}
+}
+
 .todo-card-filter-exit {
 	max-height: 0;
 	margin-block: 0;

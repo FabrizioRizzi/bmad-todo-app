@@ -12,6 +12,7 @@ workflowType: 'architecture'
 project_name: 'bmad-todo-app'
 user_name: 'Fab'
 date: '2026-04-03'
+lastSyncedWithImplementation: '2026-04-09'
 ---
 
 # Architecture Decision Document
@@ -28,7 +29,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 Key architectural implications from FRs:
 - FR7-9 (Due Dates): Optional due date per todo, settable at creation or later, with overdue visual indicator for active past-due items.
-- FR10-12 (Filtering & Sorting): Client-side filtering and sorting on a server-fetched dataset (sort by due date and status only — creation date is stored but not exposed in UI). No server-side pagination needed for V1 (single user, bounded list size).
+- FR10-12 (Filtering & Sorting): Client-side filtering and sorting on a server-fetched dataset (due date with direction toggle + reset; status grouping when filter is All — creation date is stored but not exposed in UI). No server-side pagination needed for V1 (single user, bounded list size).
 - FR18-19 (Persistence): REST API + database; todos load on app open and survive refresh (TanStack Query cache reflects server truth after each successful mutation).
 - FR20 (Data flow): Create, completion toggle, and due-date changes update the UI only after the server confirms success (pending/loading states per mutation). **Delete** is the exception: the card may leave the list immediately while an undo window runs; `DELETE` runs only after undo expires, with UI restore on failure — see undo-delete pattern below.
 - FR21-25 (Accessibility): Pervasive — affects component selection, HTML semantics, focus management, and testing strategy. Not a bolt-on concern.
@@ -386,7 +387,11 @@ No wrapper objects — TanStack Query already provides `{ data, error, isLoading
 - `useMutation` for create/toggle/delete/set-due-date — each with `onSuccess` (invalidate query cache) and `onError` (set error banner state)
 - Cache invalidation on mutation success: `queryClient.invalidateQueries(['todos'])`
 - Filter/sort state: `useState` in the app component, applied client-side to the cached todo list
-- Sort options: "Due ↓" (by due date, soonest first, nulls last) and "Status ↕" (active-first / completed-first toggle)
+- Sort options:
+  - **Due date:** default ascending (soonest first, `null` due dates last); user can toggle descending (latest first among dated items). Inactive control shows neutral **Due ↕**; active shows **Due ↑** or **Due ↓** by direction.
+  - **Status** (only when filter is **All**): toggles **active-first** vs **completed-first** on repeated activation. Inactive shows **Status ↕**; active shows **Status ↑** or **Status ↓** by direction.
+  - **Reset sort:** when sort/direction is non-default, UI offers a control to restore default due-date ascending (does not change filter).
+- **List rendering:** `TodoList` receives full todos plus `filter`, `orderedMatchingTodos` (pre-sorted matching subset), and a `sortLayoutKey` so FLIP-style reorder animations run on sort changes without fighting filter enter/exit animations (short suppression window after filter change).
 
 **Undo Delete Pattern (the one optimistic exception):**
 
@@ -557,9 +562,9 @@ bmad-todo-app/
 │   │       │   ├── add-input.test.tsx
 │   │       │   ├── filter-tabs.tsx        # All / Active / Completed
 │   │       │   ├── filter-tabs.test.tsx
-│   │       │   ├── sort-row.tsx           # Due ↓ / Status ↕
+│   │       │   ├── sort-row.tsx           # Due ↑/↓/↕, Status ↑/↓/↕, toolbar ARIA
 │   │       │   ├── sort-row.test.tsx
-│   │       │   ├── todo-list.tsx          # List container with empty/skeleton states
+│   │       │   ├── todo-list.tsx          # List + filter exit/enter + sort FLIP (`sortLayoutKey`)
 │   │       │   ├── todo-list.test.tsx
 │   │       │   ├── todo-card.tsx          # Individual item (checkbox, text, due badge, delete)
 │   │       │   ├── todo-card.test.tsx

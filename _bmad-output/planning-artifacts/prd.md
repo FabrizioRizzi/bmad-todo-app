@@ -27,8 +27,10 @@ classification:
   domain: general
   complexity: low
   projectContext: greenfield
-lastEdited: '2026-04-03'
+lastEdited: '2026-04-09'
 editHistory:
+  - date: '2026-04-09'
+    changes: 'Sorting UX alignment: FR11/FR12 expanded for due-date direction toggle (soonest vs latest, nulls last), status-sort direction toggle, and explicit reset-to-default (due date, soonest first). No FR renumbering.'
   - date: '2026-04-03'
     changes: 'Aligned FR20 and Data Flow with UX delete+undo: server-first UI for create/toggle/due-date; delete may optimistically leave the list with undo window before permanent DELETE. MVP synchronous-flow bullet updated accordingly.'
   - date: '2026-04-03'
@@ -225,7 +227,7 @@ bmad-todo-app is a Single Page Application (SPA) with a backend REST API. The fr
 - Optionally set a due date on a todo at creation or any time after.
 - View all todos in a list.
 - Filter todos by status (all, active, completed).
-- Sort todos (by due date, by status).
+- Sort todos by due date (default soonest first; optional latest-first toggle; no-due-date items last) and by status when viewing all todos (toggle active-first vs completed-first); reset to default due sort when non-default.
 - Mark a todo as complete / revert to active (checkbox toggle).
 - Delete a todo.
 - Visual indicator for overdue todos (active todos whose due date is in the past).
@@ -297,8 +299,8 @@ V1 uses **synchronous (wait-for-response) updates** for **create**, **completion
 ### Filtering & Sorting
 
 - FR10: User can filter the todo list to show all todos, only active todos, or only completed todos.
-- FR11: User can sort todos by due date (todos without a due date appear last).
-- FR12: User can sort todos by completion status.
+- FR11: User can sort todos by due date. The default is **soonest due first** (ascending). The user can toggle to **latest due first** among items that have a due date (descending). **Todos without a due date always appear last** in both directions. When the active sort or direction is not this default, the user can use an explicit **reset** control to restore default due-date sort (soonest first) without changing the active filter.
+- FR12: User can sort todos by completion status when the list is filtered to **all** todos. Repeated activation toggles group order between **active items first** and **completed items first** (with smooth list reordering). When the filter is active-only or completed-only, status sort is omitted because it is redundant; sort resets appropriately to due-date mode per product rules.
 
 ### Input Validation & Error Handling
 

@@ -8,7 +8,8 @@
 		"build": "tsc",
 		"test": "vitest run",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate"
+		"db:migrate": "drizzle-kit migrate",
+		"db:seed:demo": "tsx src/scripts/seed-demo-todos.ts"
 	},
 	"devDependencies": {
 		"@types/node": "^25.5.2",

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { formatDueDate, isOverdue, localDateToIsoDate } from './utils';
+import type { Todo } from '@/lib/api';
+import { formatDueDate, isOverdue, localDateToIsoDate, sortByDueDate, sortByStatus } from './utils';
 
 describe('formatDueDate', () => {
 	beforeEach(() => {
@@ -72,5 +73,50 @@ describe('isOverdue', () => {
 describe('localDateToIsoDate', () => {
 	it('formats a local Date as YYYY-MM-DD', () => {
 		expect(localDateToIsoDate(new Date(2026, 3, 15))).toBe('2026-04-15');
+	});
+});
+
+const todo = (overrides: Partial<Todo> & Pick<Todo, 'id' | 'description'>): Todo => ({
+	isCompleted: false,
+	createdAt: '2026-01-01T00:00:00.000Z',
+	dueDate: null,
+	...overrides,
+});
+
+describe('sortByDueDate', () => {
+	it('orders soonest due first and nulls last with stable tie-breaking', () => {
+		const a = todo({ id: 'a', description: 'A', dueDate: '2026-04-10' });
+		const b = todo({ id: 'b', description: 'B', dueDate: '2026-04-02' });
+		const c = todo({ id: 'c', description: 'C', dueDate: null });
+		const d = todo({ id: 'd', description: 'D', dueDate: null });
+		const input = [a, b, c, d];
+		expect(sortByDueDate(input, 'ascending').map((t) => t.id)).toEqual(['b', 'a', 'c', 'd']);
+		expect(sortByDueDate(input).map((t) => t.id)).toEqual(['b', 'a', 'c', 'd']);
+		expect(input.map((t) => t.id)).toEqual(['a', 'b', 'c', 'd']);
+	});
+
+	it('orders latest due first when descending, nulls still last', () => {
+		const a = todo({ id: 'a', description: 'A', dueDate: '2026-04-10' });
+		const b = todo({ id: 'b', description: 'B', dueDate: '2026-04-02' });
+		const c = todo({ id: 'c', description: 'C', dueDate: null });
+		const input = [b, a, c];
+		expect(sortByDueDate(input, 'descending').map((t) => t.id)).toEqual(['a', 'b', 'c']);
+	});
+});
+
+describe('sortByStatus', () => {
+	it('groups active first then completed, stable within groups', () => {
+		const done1 = todo({ id: 'd1', description: 'D1', isCompleted: true });
+		const open1 = todo({ id: 'o1', description: 'O1', isCompleted: false });
+		const open2 = todo({ id: 'o2', description: 'O2', isCompleted: false });
+		const done2 = todo({ id: 'd2', description: 'D2', isCompleted: true });
+		const input = [done1, open1, open2, done2];
+		expect(sortByStatus(input, 'active-first').map((t) => t.id)).toEqual(['o1', 'o2', 'd1', 'd2']);
+	});
+
+	it('groups completed first when requested', () => {
+		const open = todo({ id: 'o', description: 'O', isCompleted: false });
+		const done = todo({ id: 'd', description: 'D', isCompleted: true });
+		expect(sortByStatus([open, done], 'completed-first').map((t) => t.id)).toEqual(['d', 'o']);
 	});
 });

@@ -86,7 +86,7 @@ Both loops are primary. The UX must serve rapid-fire task entry and calm task re
 | Uncomplete a todo | Single click/tap on checkbox |
 | Delete a todo | Single click/tap on delete control |
 | Filter by status | Single click/tap per filter option |
-| Sort todos | Single click/tap per sort option |
+| Sort todos | Single click/tap per sort option; Due and Status each toggle direction when already active; **Reset sort** when non-default |
 
 No action in the core set should require a modal, a confirmation dialog, or a multi-step sequence. If the user wants to do something, one deliberate interaction should be sufficient.
 
@@ -393,7 +393,7 @@ bmad-todo-app uses **exclusively established patterns** — there is no novel in
 
 **2. Interaction:**
 - **Filter:** Single click/tap on a filter tab to segment the list. The active filter is visually highlighted. Transitions between filter states are animated (items fade out/in, not snap).
-- **Sort:** Single click/tap to change sort order. List reorders with smooth animation.
+- **Sort:** Single click/tap selects Due vs Status (All filter). Clicking the **active** sort control toggles direction. **Reset sort** appears only when not on default (due date, soonest first). List reorders with smooth animation.
 - **Complete:** Single click/tap on a checkbox. The item transitions to completed styling (strikethrough, dimmed opacity) with a smooth animation.
 - **Uncomplete:** Single click/tap on the same checkbox reverses the transition.
 - **Delete:** Single click/tap on the delete control. The item animates out of the list. An undo toast appears for a brief window (5-8 seconds).
@@ -571,7 +571,7 @@ The final direction combines elements from three explorations into a cohesive de
 
 **From Direction 6 (Dense Productive) — structure and metadata:**
 - Dedicated sort row below filters with subtle background strip
-- Sort options: **Due ↓** and **Status ↕** (toggle between active-first and completed-first)
+- Sort options: **Due** and **Status** (when filter is All). **Due:** default soonest first — active label **Due ↑**; second click toggles latest due first (**Due ↓**); when Due is not the active sort, show **Due ↕**. **Status:** inactive **Status ↕**; active **Status ↑** (active-first) or **Status ↓** (completed-first); repeated click toggles. **Reset sort** text button when sort/direction is non-default — restores due date soonest-first, leaves filter unchanged.
 - Status sort hidden when filter is Active or Completed (redundant when already filtered)
 - Count badge in header (accent-colored pill showing remaining items)
 
@@ -592,7 +592,7 @@ Final interactive mockup generated at `ux-design-direction-final.html` showing d
 | Soft Elevated base | Delivers the "quiet delight" and "visual beauty" emotional goals. The warmth and rounded cards create a premium feel that distinguishes from utilitarian todo apps. |
 | D4 tab filters (full-width underline) | Clear, structured filter navigation that supports the review loop. Full-width tabs give equal weight to each filter option. Underline indicator is clean and familiar. |
 | Separate sort row | Keeps filter tabs visually clean and undistracted. Sort is secondary to filtering — the visual hierarchy reflects this. Status sort hides contextually to avoid redundancy. |
-| Single Status ↕ toggle | Minimum-click doctrine — one button toggles direction rather than choosing between two. The ↕ arrow communicates "toggleable." |
+| Due + Status toggles | Minimum-click doctrine — each sort is one control; when that sort is active, clicking again flips direction (↑/↓). Neutral ↕ when that dimension is inactive. **Reset sort** avoids hunting to restore default. |
 | Add button beside input | Supports both input modes: Enter for keyboard users, tap "+" for mobile/touch users. Reinforces the form-field mental model. Does not replace Enter — it supplements it. |
 | Smooth card distinction | Both active and completed cards belong to the same visual family (both have left bars, both have borders). The difference is gentle — warm vs. muted — supporting "instant legibility" without harsh visual breaks. |
 | Card borders | Adds definition to each item without heavy visual weight. Works with the soft elevated aesthetic rather than against it. |
@@ -728,37 +728,42 @@ The user manages their list view to focus on what matters.
 
 ```mermaid
 flowchart TD
-    A[User views All tasks<br/>— active + completed visible<br/>Sort: Due ↓] --> B{User action?}
+    A[User views All tasks<br/>— active + completed visible<br/>Sort: Due ↑ default] --> B{User action?}
 
-    B -->|Tap 'Active' tab| C[Tab underline slides to Active<br/>Completed items animate out<br/>— fade/slide transition]
-    C --> D[Only active items visible<br/>Sort row: Due ↓ only<br/>— Status sort hidden]
+    B -->|Tap 'Active' tab| C[Tab underline slides to Active<br/>Completed items animate out<br/>— fade/height transition]
+    C --> D[Only active items visible<br/>Sort row: Due only<br/>— Status hidden, due sort kept]
     D --> E{User action?}
     E -->|Tap 'All' tab| A
     E -->|Tap 'Completed' tab| F
 
     B -->|Tap 'Completed' tab| F[Tab underline slides to Completed<br/>Active items animate out]
-    F --> G[Only completed items visible<br/>Sort row: Due ↓ only<br/>— Status sort hidden]
+    F --> G[Only completed items visible<br/>Sort row: Due only<br/>— Status hidden]
     G --> H{User action?}
     H -->|Tap 'All' tab| A
     H -->|Tap 'Active' tab| C
 
-    B -->|Tap 'Status ↕' sort| I{Current sort state?}
-    I -->|Was Due ↓| J[List reorders with animation:<br/>Active items group first<br/>Completed items group below<br/>Status ↕ becomes active]
-    I -->|Was Status — active first| K[List reorders:<br/>Completed items group first<br/>Active items group below]
-    I -->|Was Status — completed first| L[List reorders:<br/>Active items group first<br/>Completed items group below]
+    B -->|Tap Due control| M{Due already active?}
+    M -->|No| N[List applies due-date sort<br/>Due becomes active ↑ soonest]
+    M -->|Yes| O[Toggle Due ↑ ↔ Due ↓<br/>nulls-last preserved]
 
-    B -->|Tap 'Due ↓' sort| M[List reorders by due date<br/>Due ↓ becomes active sort]
+    B -->|Tap Status ↕| I{Current sort state?}
+    I -->|Was Due active| J[List reorders:<br/>Status active-first ↑]
+    I -->|Was Status ↑| K[Toggle to completed-first ↓]
+    I -->|Was Status ↓| L[Toggle to active-first ↑]
 
-    G -->|No completed items| N[Filtered empty state:<br/>'No completed tasks'<br/>'Tasks you complete<br/>will appear here.']
-    D -->|No active items| O[Filtered empty state:<br/>'No active tasks'<br/>'Add a task above to<br/>get started.']
+    B -->|Tap Reset sort| R[Restore Due ↑ soonest-first<br/>Filter unchanged]
+
+    G -->|No completed items| NS[Filtered empty state:<br/>'No completed tasks'...]
+    D -->|No active items| OA[Filtered empty state:<br/>'No active tasks'...]
 ```
 
 **Key UX decisions:**
-- Filter transitions are animated — items don't snap, they fade/slide out and in
-- Status sort disappears when a filter is active (redundant)
+- Filter transitions are animated — items don't snap; exiting rows stay visually anchored (above newly matching rows) so the list container does not jump height on tab switch.
+- Status sort disappears when a filter is active (redundant); sort mode returns to due-date per app rules.
 - Filtered empty states are specific — they explain *why* the list is empty and guide the next action
 - Sort reordering uses smooth list animation, not a page refresh
 - Tab underline animates between positions for visual continuity
+- **Reset sort** only when needed — restores default due order without clearing filters
 
 ### Journey 4: Error Recovery
 
@@ -1025,8 +1030,8 @@ Every empty state explains *why* the list is empty and what to do next:
 
 **Anatomy:**
 - "Sort by" label — uppercase, small, secondary text
-- Sort options: "Due ↓" and "Status ↕" (when "All" filter is active)
-- Vertical divider between options
+- Sort option buttons: **Due** and **Status** (when "All" filter is active); optional **Reset sort** text button when state is non-default
+- Vertical divider between Due and Status
 - Subtle background strip to visually separate from filter tabs
 
 **States:**
@@ -1036,19 +1041,25 @@ Every empty state explains *why* the list is empty and what to do next:
 | Default | `--text-primary`, bold, surface bg | `--text-secondary`, regular weight |
 | Hover (inactive) | — | `--text-primary`, surface bg |
 
+**Labels (communicate direction):**
+- **Due:** `Due ↑` = due sort active, soonest first · `Due ↓` = due sort active, latest first · `Due ↕` = due sort not active
+- **Status:** `Status ↑` = active-first · `Status ↓` = completed-first · `Status ↕` = status sort not active
+
 **Conditional visibility:**
-- Filter = "All": show both "Due ↓" and "Status ↕"
-- Filter = "Active" or "Completed": show only "Due ↓" (status sort hidden)
+- Filter = "All": show Due + Status (+ Reset sort when applicable)
+- Filter = "Active" or "Completed": show Due only (status sort hidden)
 
 **Behavior:**
-- "Due ↓" sorts by due date, soonest first. Todos without a due date appear last.
-- "Status ↕" toggles between active-first and completed-first on each click
-- Sort change triggers animated list reordering
+- Due date: default **soonest first** (`Due ↑`). Todos without a due date **always last**. Clicking Due when already active toggles **latest first** (`Due ↓`).
+- Status (All only): first activation groups **active first** (`Status ↑`); repeated click toggles **completed first** (`Status ↓`).
+- **Reset sort:** restores due date soonest-first; does not change the selected filter tab.
+- Sort change triggers animated list reordering (transform / FLIP-style); coordinate with filter animations so neither fights the other.
 - Active sort button has highlighted styling
 
 **Accessibility:**
 - `role="toolbar"` container with `aria-label="Sort options"`
-- Each sort button: `role="button"`, `aria-pressed="true/false"`
+- Each sort button: `role="button"`, `aria-pressed="true/false"`, descriptive `aria-label` including direction (e.g. soonest vs latest due)
+- Reset control: clear accessible name (e.g. reset to due date, soonest first)
 - Keyboard: Tab to enter toolbar, Left/Right between options, Enter/Space to activate
 
 #### EmptyState

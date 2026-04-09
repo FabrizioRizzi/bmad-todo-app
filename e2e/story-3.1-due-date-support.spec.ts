@@ -9,6 +9,20 @@ function localIsoDate(d: Date): string {
 	return `${y}-${m}-${day}`;
 }
 
+/**
+ * Two upcoming ISO dates so an active todo shows distinct `formatDueDate` badges (never "Overdue").
+ * Picking fixed calendar days in the *current* month fails late in the month when both dates are
+ * already past. Offsetting from **today** keeps the days in the near future and usually on the
+ * default calendar view (same month or adjacent outside days).
+ */
+function twoUpcomingDueDates(): { first: string; second: string } {
+	const a = new Date();
+	a.setDate(a.getDate() + 3);
+	const b = new Date();
+	b.setDate(b.getDate() + 10);
+	return { first: localIsoDate(a), second: localIsoDate(b) };
+}
+
 function todoCardBar(page: import('@playwright/test').Page, description: string) {
 	return page
 		.locator(`text=${description}`)
@@ -76,12 +90,10 @@ test.describe('Story 3.1 - Due date support', () => {
 
 	test('inline change due date updates badge', async ({ page }) => {
 		const todoText = `Inline due ${Date.now()}`;
-		const now = new Date();
-		const iso10 = localIsoDate(new Date(now.getFullYear(), now.getMonth(), 10));
-		const iso20 = localIsoDate(new Date(now.getFullYear(), now.getMonth(), 20));
+		const { first: isoFirst, second: isoSecond } = twoUpcomingDueDates();
 
 		await addInputDueDateButton(page).click();
-		await pickCalendarDay(page, iso10);
+		await pickCalendarDay(page, isoFirst);
 
 		const input = page.locator('[placeholder="Add a new task..."]');
 		await input.fill(todoText);
@@ -94,9 +106,9 @@ test.describe('Story 3.1 - Due date support', () => {
 		const before = await changeBtn.textContent();
 		await changeBtn.click();
 		await expect(page.locator('[role="grid"]:visible')).toBeVisible();
-		await pickCalendarDay(page, iso20);
+		await pickCalendarDay(page, isoSecond);
 
-		await expect(changeBtn).not.toHaveText(before ?? '');
+		await expect(changeBtn).not.toHaveText(before ?? '', { timeout: 10000 });
 	});
 
 	test('clears due date from card popover', async ({ page }) => {

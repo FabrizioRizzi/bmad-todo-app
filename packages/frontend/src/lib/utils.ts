@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { Todo } from '@/lib/api';
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -65,4 +66,34 @@ export function isOverdue(dueDate: string | null, isCompleted: boolean): boolean
 	if (!dueDate || isCompleted) return false;
 	if (!localDateFromValidIso(dueDate)) return false;
 	return dueDate < todayLocalIso();
+}
+
+export type DueSortDirection = 'ascending' | 'descending';
+
+/**
+ * Sort by due date. `null` due dates always last.
+ * Ascending: soonest first. Descending: latest first among dated items.
+ */
+export function sortByDueDate(todos: Todo[], direction: DueSortDirection = 'ascending'): Todo[] {
+	return [...todos].sort((a, b) => {
+		if (a.dueDate === null && b.dueDate === null) return 0;
+		if (a.dueDate === null) return 1;
+		if (b.dueDate === null) return -1;
+		const cmp = a.dueDate.localeCompare(b.dueDate);
+		return direction === 'ascending' ? cmp : -cmp;
+	});
+}
+
+/** Group by completion; preserve order within each group. */
+export function sortByStatus(todos: Todo[], direction: 'active-first' | 'completed-first'): Todo[] {
+	return [...todos].sort((a, b) => {
+		const aDone = a.isCompleted;
+		const bDone = b.isCompleted;
+		if (direction === 'active-first') {
+			if (aDone === bDone) return 0;
+			return aDone ? 1 : -1;
+		}
+		if (aDone === bDone) return 0;
+		return aDone ? -1 : 1;
+	});
 }

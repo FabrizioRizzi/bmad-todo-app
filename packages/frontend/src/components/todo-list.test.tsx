@@ -51,7 +51,13 @@ const renderWithQueryClient = (component: React.ReactNode) => {
 describe('TodoList', () => {
 	it('shows skeleton placeholders while initial load is pending', () => {
 		const { container } = renderWithQueryClient(
-			<TodoList filter="all" highlightedId={null} isInitialLoading={true} todos={[]} />,
+			<TodoList
+				sortLayoutKey="due:ascending:active-first"
+				filter="all"
+				highlightedId={null}
+				isInitialLoading={true}
+				todos={[]}
+			/>,
 		);
 		expect(container.querySelector('.todo-skeleton-pulse')).toBeInTheDocument();
 		expect(screen.queryByText('Alpha')).not.toBeInTheDocument();
@@ -59,7 +65,13 @@ describe('TodoList', () => {
 
 	it('renders descriptions in API order when loaded', () => {
 		renderWithQueryClient(
-			<TodoList filter="all" highlightedId={null} isInitialLoading={false} todos={sampleTodos} />,
+			<TodoList
+				sortLayoutKey="due:ascending:active-first"
+				filter="all"
+				highlightedId={null}
+				isInitialLoading={false}
+				todos={sampleTodos}
+			/>,
 		);
 		const items = screen.getAllByText(/Alpha|Beta/);
 		expect(items[0]).toHaveTextContent('Alpha');
@@ -68,14 +80,26 @@ describe('TodoList', () => {
 
 	it('shows empty state when loaded with no todos', () => {
 		renderWithQueryClient(
-			<TodoList filter="all" highlightedId={null} isInitialLoading={false} todos={[]} />,
+			<TodoList
+				sortLayoutKey="due:ascending:active-first"
+				filter="all"
+				highlightedId={null}
+				isInitialLoading={false}
+				todos={[]}
+			/>,
 		);
 		expect(screen.getByRole('status', { name: /no tasks yet/i })).toBeInTheDocument();
 	});
 
 	it('applies highlighted styling to the matching id', () => {
 		renderWithQueryClient(
-			<TodoList filter="all" highlightedId="2" isInitialLoading={false} todos={sampleTodos} />,
+			<TodoList
+				sortLayoutKey="due:ascending:active-first"
+				filter="all"
+				highlightedId="2"
+				isInitialLoading={false}
+				todos={sampleTodos}
+			/>,
 		);
 		expect(screen.getByText('Beta').closest('[data-highlighted="true"]')).toBeTruthy();
 		expect(screen.getByText('Alpha').closest('[data-highlighted="true"]')).toBeNull();
@@ -83,7 +107,13 @@ describe('TodoList', () => {
 
 	it('shows only active todos when filter is active', () => {
 		renderWithQueryClient(
-			<TodoList filter="active" highlightedId={null} isInitialLoading={false} todos={mixedTodos} />,
+			<TodoList
+				sortLayoutKey="due:ascending:active-first"
+				filter="active"
+				highlightedId={null}
+				isInitialLoading={false}
+				todos={mixedTodos}
+			/>,
 		);
 		expect(screen.getByText('Active task')).toBeInTheDocument();
 		expect(screen.queryByText('Completed task')).not.toBeInTheDocument();
@@ -92,6 +122,7 @@ describe('TodoList', () => {
 	it('shows only completed todos when filter is completed', () => {
 		renderWithQueryClient(
 			<TodoList
+				sortLayoutKey="due:ascending:active-first"
 				filter="completed"
 				highlightedId={null}
 				isInitialLoading={false}
@@ -114,6 +145,7 @@ describe('TodoList', () => {
 		];
 		renderWithQueryClient(
 			<TodoList
+				sortLayoutKey="due:ascending:active-first"
 				filter="active"
 				highlightedId={null}
 				isInitialLoading={false}
@@ -125,7 +157,13 @@ describe('TodoList', () => {
 
 	it('exposes todo list id for aria-controls', () => {
 		renderWithQueryClient(
-			<TodoList filter="all" highlightedId={null} isInitialLoading={false} todos={sampleTodos} />,
+			<TodoList
+				sortLayoutKey="due:ascending:active-first"
+				filter="all"
+				highlightedId={null}
+				isInitialLoading={false}
+				todos={sampleTodos}
+			/>,
 		);
 		expect(document.getElementById('todo-list')).toBeTruthy();
 	});

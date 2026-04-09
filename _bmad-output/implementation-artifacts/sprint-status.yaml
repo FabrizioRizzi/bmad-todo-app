@@ -1,5 +1,5 @@
 # generated: 2026-04-07
-# last_updated: 2026-04-09 (3-1 due date support → done)
+# last_updated: 2026-04-09 (3-2 filter todos → review)
 # project: bmad-todo-app
 # project_key: NOKEY
 # tracking_system: file-system
@@ -62,7 +62,7 @@ development_status:
   # Epic 3: Due Dates & Organization
   epic-3: in-progress
   3-1-due-date-support: done
-  3-2-filter-todos-by-status: ready-for-dev
+  3-2-filter-todos-by-status: review
   3-3-sort-todos: ready-for-dev
   epic-3-retrospective: optional
 

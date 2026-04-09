@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AddInput } from '@/components/add-input';
 import { AppHeader } from '@/components/app-header';
 import { ErrorBanner } from '@/components/error-banner';
+import { FilterTabs, type TodoFilter } from '@/components/filter-tabs';
 import { TodoList } from '@/components/todo-list';
 import { UndoToast } from '@/components/undo-toast';
 import { useDeleteTodo, useTodosQuery } from '@/hooks/use-todos';
@@ -26,8 +27,34 @@ const getErrorMessage = (actionType: ErrorActionType): string => {
 
 export function App() {
 	const { data: todos = [], isPending, isError } = useTodosQuery();
+	const [filter, setFilter] = useState<TodoFilter>('all');
 	const [highlightedId, setHighlightedId] = useState<string | null>(null);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [filterAnnouncement, setFilterAnnouncement] = useState('');
+	const prevFilterForLiveRef = useRef<TodoFilter | null>(null);
+
+	const activeCount = useMemo(() => todos.filter((t) => !t.isCompleted).length, [todos]);
+	const completedCount = useMemo(() => todos.filter((t) => t.isCompleted).length, [todos]);
+	const counts = useMemo(
+		() => ({ all: todos.length, active: activeCount, completed: completedCount }),
+		[todos.length, activeCount, completedCount],
+	);
+
+	const filteredShownCount = useMemo(() => {
+		if (filter === 'all') return todos.length;
+		if (filter === 'active') return activeCount;
+		return completedCount;
+	}, [filter, todos.length, activeCount, completedCount]);
+
+	useEffect(() => {
+		if (prevFilterForLiveRef.current === null) {
+			prevFilterForLiveRef.current = filter;
+			return;
+		}
+		if (prevFilterForLiveRef.current === filter) return;
+		prevFilterForLiveRef.current = filter;
+		setFilterAnnouncement(`${filteredShownCount} tasks shown`);
+	}, [filter, filteredShownCount]);
 
 	const clearError = useCallback(() => {
 		setErrorMessage(null);
@@ -53,7 +80,7 @@ export function App() {
 	return (
 		<div className="min-h-screen bg-background">
 			<main className="mx-auto w-full max-w-[40rem] px-[var(--space-4)] py-[var(--space-8)] sm:px-[var(--space-6)]">
-				<AppHeader count={todos.length} />
+				<AppHeader count={activeCount} />
 				<section
 					aria-label="Add new todo"
 					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] bg-[color:var(--surface)] p-[var(--space-4)] shadow-[var(--shadow-soft)]"
@@ -71,6 +98,12 @@ export function App() {
 						<ErrorBanner message={errorMessage} onDismiss={clearError} />
 					</div>
 				)}
+				<div className="mt-[var(--space-4)] w-full">
+					<FilterTabs activeFilter={filter} counts={counts} onFilterChange={setFilter} />
+				</div>
+				<div aria-live="polite" className="sr-only">
+					{filterAnnouncement}
+				</div>
 				<section
 					aria-label="Todo list"
 					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] bg-[color:var(--surface)] p-[var(--space-4)] shadow-[var(--shadow-soft)]"
@@ -84,6 +117,7 @@ export function App() {
 						</p>
 					) : (
 						<TodoList
+							filter={filter}
 							highlightedId={highlightedId}
 							isInitialLoading={isPending}
 							todos={todos}

@@ -18,6 +18,8 @@ type TodoCardProps = {
 	onDelete?: (id: string) => void;
 	isExiting?: boolean;
 	isEntering?: boolean;
+	isFilterExiting?: boolean;
+	isFilterEntering?: boolean;
 };
 
 export function TodoCard({
@@ -30,6 +32,8 @@ export function TodoCard({
 	onDelete,
 	isExiting = false,
 	isEntering = false,
+	isFilterExiting = false,
+	isFilterEntering = false,
 }: TodoCardProps) {
 	const toggleMutation = useToggleTodoMutation();
 	const updateDueDateMutation = useUpdateDueDateMutation(onDueDateError);
@@ -72,7 +76,12 @@ export function TodoCard({
 		}
 	};
 
-	const animationClass = isExiting ? 'todo-card-exit-delete' : isEntering ? 'todo-card-enter' : '';
+	const animationClass = cn(
+		isExiting && 'todo-card-exit-delete',
+		!isExiting && isFilterExiting && 'todo-card-filter-exit',
+		!isExiting && !isFilterExiting && isEntering && 'todo-card-enter',
+		!isExiting && !isFilterExiting && !isEntering && isFilterEntering && 'todo-card-filter-enter',
+	);
 
 	const barClassName = cn(
 		'group todo-card-bar rounded-[var(--radius)] border border-[color:var(--border)] border-l-[3px] border-l-[color:var(--active-bar)] bg-[color:var(--active-bg)] py-[length:var(--card-padding-y-mobile)] px-[length:var(--card-padding-x-mobile)] sm:py-[length:var(--card-padding-y-desktop)] sm:px-[length:var(--card-padding-x-desktop)]',
@@ -81,7 +90,7 @@ export function TodoCard({
 	);
 
 	return (
-		<li className={animationClass}>
+		<li className={cn('todo-list-item-motion', animationClass)}>
 			<div className={barClassName} data-highlighted={highlighted ? 'true' : undefined}>
 				<div className="flex items-center gap-[var(--space-3)]">
 					<div className="relative flex h-11 w-11 shrink-0 items-center justify-center">

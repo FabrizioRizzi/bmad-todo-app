@@ -396,3 +396,137 @@ describe('App – Original Coverage', () => {
 		expect(screen.getByRole('button', { name: /add task/i })).toBeInTheDocument();
 	});
 });
+
+describe('App – Todo filters', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('updates visible todos when filter tabs change', async () => {
+		const user = userEvent.setup();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(
+							JSON.stringify([
+								{
+									id: 'a',
+									description: 'Still open',
+									isCompleted: false,
+									createdAt: '2026-01-01T00:00:00.000Z',
+									dueDate: null,
+								},
+								{
+									id: 'b',
+									description: 'Already done',
+									isCompleted: true,
+									createdAt: '2026-01-02T00:00:00.000Z',
+									dueDate: null,
+								},
+							]),
+							{
+								status: 200,
+								headers: { 'Content-Type': 'application/json' },
+							},
+						),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText('Still open')).toBeInTheDocument();
+		});
+		expect(screen.getByText('Already done')).toBeInTheDocument();
+
+		await user.click(screen.getByRole('tab', { name: /active, 1 tasks/i }));
+
+		await waitFor(() => {
+			expect(screen.getByText('Still open')).toBeInTheDocument();
+		});
+		await waitFor(
+			() => {
+				expect(screen.queryByText('Already done')).not.toBeInTheDocument();
+			},
+			{ timeout: 2000 },
+		);
+
+		await user.click(screen.getByRole('tab', { name: /completed, 1 tasks/i }));
+
+		await waitFor(() => {
+			expect(screen.getByText('Already done')).toBeInTheDocument();
+		});
+		await waitFor(
+			() => {
+				expect(screen.queryByText('Still open')).not.toBeInTheDocument();
+			},
+			{ timeout: 2000 },
+		);
+	});
+
+	it('announces task count in live region when filter changes', async () => {
+		const user = userEvent.setup();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(
+							JSON.stringify([
+								{
+									id: 'a',
+									description: 'One',
+									isCompleted: false,
+									createdAt: '2026-01-01T00:00:00.000Z',
+									dueDate: null,
+								},
+								{
+									id: 'b',
+									description: 'Two',
+									isCompleted: true,
+									createdAt: '2026-01-02T00:00:00.000Z',
+									dueDate: null,
+								},
+							]),
+							{
+								status: 200,
+								headers: { 'Content-Type': 'application/json' },
+							},
+						),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		const { container } = render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText('One')).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByRole('tab', { name: /active, 1 tasks/i }));
+
+		await waitFor(() => {
+			const live = container.querySelector('[aria-live="polite"].sr-only');
+			expect(live?.textContent).toBe('1 tasks shown');
+		});
+	});
+});

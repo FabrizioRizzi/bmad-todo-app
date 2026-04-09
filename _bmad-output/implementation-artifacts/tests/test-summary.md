@@ -1,6 +1,6 @@
 # Test Automation Summary
 
-Generated: 2026-04-09 (Story 3.1 E2E); prior sections: 2026-04-08
+Generated: 2026-04-09 (Story 3.2 E2E); prior sections: 2026-04-08–09
 
 ## Bug Fix
 
@@ -47,6 +47,16 @@ This caused Playwright strict mode violations in 2 existing e2e tests (`todos.sp
 
 **Note:** AddInput calendar trigger must use `getByRole('button', { name: 'Set due date', exact: true })` so Playwright does not match card buttons whose accessible name starts with the same substring.
 
+### E2E Tests — Story 3.2 Filter todos by status
+- [x] `e2e/story-3.2-filter-todos-by-status.spec.ts` — 8 Playwright tests (serial + API cleanup before each test)
+  - Three filter tabs; **All** selected by default (`aria-selected`)
+  - Tabs use `aria-controls="todo-list"`; `#todo-list` is present
+  - **Active** / **Completed** filters hide non-matching todos after transition; **All** restores full list
+  - Empty states: **No active tasks** / **No completed tasks** with expected hints
+  - Filter change announces count in the screen-reader live region (`[aria-live="polite"].sr-only`), matching `app.test.tsx` pattern
+
+**Note:** Filter tab accessible names are `"{label}, {count} tasks"` (from `aria-label`). This file runs **`describe.configure({ mode: 'serial' })`** and clears todos via `DELETE /api/todos/:id` in `beforeEach` so empty-state and count assertions stay stable when the dev DB is shared.
+
 ## Coverage
 
 ### E2E Tests by Story
@@ -56,9 +66,10 @@ This caused Playwright strict mode violations in 2 existing e2e tests (`todos.sp
 | 2.1 - Toggle Todo Completion | `e2e/toggle-todo-completion.spec.ts` | 7 | ✅ Pass |
 | 2.2 - Delete Todo with Undo | `e2e/delete-todo.spec.ts` | 9 | ✅ Pass |
 | 2.3 - Error Banner Component | `e2e/error-banner.spec.ts` | 10 | ✅ Pass |
-| 3.1 - Due date support | `e2e/due-date-support.spec.ts` | 7 | ✅ Pass |
+| 3.1 - Due date support | `e2e/story-3.1-due-date-support.spec.ts` | 7 | ✅ Pass |
+| 3.2 - Filter by status | `e2e/story-3.2-filter-todos-by-status.spec.ts` | 8 | ✅ Pass |
 | Smoke | `e2e/example.spec.ts` | 1 | ✅ Pass |
-| **Total** | | **48** | **✅ All pass** |
+| **Total** | | **56** | **✅ All pass** |
 
 ### Story 2.3 Acceptance Criteria Coverage
 | AC# | Description | E2E Test |
@@ -79,11 +90,12 @@ This caused Playwright strict mode violations in 2 existing e2e tests (`todos.sp
 |-------|-------|--------|
 | Backend (Vitest) | 20 | ✅ Pass |
 | Frontend (Vitest) | 53 | ✅ Pass |
-| E2E (Playwright) | 48 | ✅ Pass |
+| E2E (Playwright) | 56 | ✅ Pass |
 | Lint (Biome) | — | ✅ 0 errors |
-| **Total** | **121** | **✅ All pass** |
+| **Total** | **129** | **✅ All pass** |
 
 ## Next Steps
 - Run tests in CI
 - Story 2.3 can proceed from `review` to `done`
-- Story 3.1 E2E coverage is in `e2e/due-date-support.spec.ts` (API-level due date cases remain covered by `packages/backend/src/routes/todo-routes.test.ts`)
+- Story 3.1 E2E coverage is in `e2e/story-3.1-due-date-support.spec.ts` (API-level due date cases remain covered by `packages/backend/src/routes/todo-routes.test.ts`)
+- Story 3.2 E2E coverage is in `e2e/story-3.2-filter-todos-by-status.spec.ts`; when running the full Playwright suite locally with multiple workers, consider `--workers=1` if other specs run at the same time as this file (this spec clears all todos in `beforeEach`)

@@ -266,6 +266,38 @@
 	animation: todo-card-enter var(--duration-enter) var(--ease-standard) forwards;
 }
 
+/* Filter change — fade + height collapse (Story 3.2, UX-DR10) */
+.todo-list-item-motion {
+	max-height: 24rem;
+	overflow: hidden;
+	transition:
+		max-height var(--duration-smooth) var(--ease-standard),
+		opacity var(--duration-smooth) var(--ease-standard),
+		margin-block var(--duration-smooth) var(--ease-standard);
+}
+
+.todo-card-filter-exit {
+	max-height: 0;
+	margin-block: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+
+@keyframes todo-card-filter-enter {
+	from {
+		opacity: 0;
+		transform: translateY(-6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.todo-card-filter-enter {
+	animation: todo-card-filter-enter var(--duration-smooth) var(--ease-standard) forwards;
+}
+
 /* Undo toast animations (Story 2.2) */
 @keyframes undo-toast-slide-up {
 	from {

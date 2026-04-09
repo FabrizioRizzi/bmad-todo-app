@@ -1,6 +1,6 @@
 # Test Automation Summary
 
-Generated: 2026-04-08
+Generated: 2026-04-09 (Story 3.1 E2E); prior sections: 2026-04-08
 
 ## Bug Fix
 
@@ -35,6 +35,18 @@ This caused Playwright strict mode violations in 2 existing e2e tests (`todos.sp
 ### Existing E2E Tests (fixed)
 - [x] `e2e/todos.spec.ts` — Updated 2 tests to use specific ErrorBanner locators
 
+### E2E Tests — Story 3.1 Due date support
+- [x] `e2e/due-date-support.spec.ts` — 7 Playwright tests
+  - Opens AddInput date picker, creates todo with **Today** badge, resets calendar control to icon
+  - Todo without due date shows **Set due date for …** control on card
+  - Inline change due date updates badge (calendar on card)
+  - **Clear due date** from card popover restores icon control
+  - Active todo with past due (seeded via API): **Overdue** label and `todo-card-overdue` styling
+  - Completed todo with past due (API): no overdue styling
+  - Due date **PATCH** failure: error banner shows due-date message; only `dueDate` PATCH is aborted (toggle PATCH still allowed)
+
+**Note:** AddInput calendar trigger must use `getByRole('button', { name: 'Set due date', exact: true })` so Playwright does not match card buttons whose accessible name starts with the same substring.
+
 ## Coverage
 
 ### E2E Tests by Story
@@ -44,8 +56,9 @@ This caused Playwright strict mode violations in 2 existing e2e tests (`todos.sp
 | 2.1 - Toggle Todo Completion | `e2e/toggle-todo-completion.spec.ts` | 7 | ✅ Pass |
 | 2.2 - Delete Todo with Undo | `e2e/delete-todo.spec.ts` | 9 | ✅ Pass |
 | 2.3 - Error Banner Component | `e2e/error-banner.spec.ts` | 10 | ✅ Pass |
+| 3.1 - Due date support | `e2e/due-date-support.spec.ts` | 7 | ✅ Pass |
 | Smoke | `e2e/example.spec.ts` | 1 | ✅ Pass |
-| **Total** | | **41** | **✅ All pass** |
+| **Total** | | **48** | **✅ All pass** |
 
 ### Story 2.3 Acceptance Criteria Coverage
 | AC# | Description | E2E Test |
@@ -66,10 +79,11 @@ This caused Playwright strict mode violations in 2 existing e2e tests (`todos.sp
 |-------|-------|--------|
 | Backend (Vitest) | 20 | ✅ Pass |
 | Frontend (Vitest) | 53 | ✅ Pass |
-| E2E (Playwright) | 41 | ✅ Pass |
+| E2E (Playwright) | 48 | ✅ Pass |
 | Lint (Biome) | — | ✅ 0 errors |
-| **Total** | **114** | **✅ All pass** |
+| **Total** | **121** | **✅ All pass** |
 
 ## Next Steps
 - Run tests in CI
 - Story 2.3 can proceed from `review` to `done`
+- Story 3.1 E2E coverage is in `e2e/due-date-support.spec.ts` (API-level due date cases remain covered by `packages/backend/src/routes/todo-routes.test.ts`)

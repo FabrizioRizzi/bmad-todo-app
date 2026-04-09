@@ -59,7 +59,8 @@ function isTodo(value: unknown): value is Todo {
 		typeof o.id === 'string' &&
 		typeof o.description === 'string' &&
 		typeof o.isCompleted === 'boolean' &&
-		typeof o.createdAt === 'string'
+		typeof o.createdAt === 'string' &&
+		(typeof o.dueDate === 'string' || o.dueDate === null)
 	);
 }
 
@@ -92,7 +93,15 @@ export async function getTodos(): Promise<Todo[]> {
 	return data;
 }
 
-export async function createTodo(body: { description: string }): Promise<Todo> {
+export type PatchTodoBody = {
+	isCompleted?: boolean;
+	dueDate?: string | null;
+};
+
+export async function createTodo(body: {
+	description: string;
+	dueDate?: string | null;
+}): Promise<Todo> {
 	const res = await safeFetch('/api/todos', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -123,11 +132,11 @@ export async function deleteTodo(id: string): Promise<void> {
 	}
 }
 
-export async function toggleTodo(id: string, isCompleted: boolean): Promise<Todo> {
+export async function patchTodo(id: string, body: PatchTodoBody): Promise<Todo> {
 	const res = await safeFetch(`/api/todos/${id}`, {
 		method: 'PATCH',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ isCompleted }),
+		body: JSON.stringify(body),
 	});
 	if (!res.ok) {
 		const err = await parseErrorResponse(res);
@@ -142,4 +151,8 @@ export async function toggleTodo(id: string, isCompleted: boolean): Promise<Todo
 		});
 	}
 	return data;
+}
+
+export async function toggleTodo(id: string, isCompleted: boolean): Promise<Todo> {
+	return patchTodo(id, { isCompleted });
 }

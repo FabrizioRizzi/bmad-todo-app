@@ -104,13 +104,19 @@ const todoRoutesPlugin: FastifyPluginAsyncZod = async (fastify) => {
 		},
 		async (request, reply) => {
 			const { id } = request.params;
-			const { isCompleted } = request.body;
+			const body = request.body;
+			const update: Partial<{
+				isCompleted: boolean;
+				dueDate: string | null;
+			}> = {};
+			if (body.isCompleted !== undefined) {
+				update.isCompleted = body.isCompleted;
+			}
+			if (body.dueDate !== undefined) {
+				update.dueDate = body.dueDate;
+			}
 
-			const [row] = await fastify.db
-				.update(todos)
-				.set({ isCompleted })
-				.where(eq(todos.id, id))
-				.returning();
+			const [row] = await fastify.db.update(todos).set(update).where(eq(todos.id, id)).returning();
 
 			if (!row) {
 				return reply.status(404).send({

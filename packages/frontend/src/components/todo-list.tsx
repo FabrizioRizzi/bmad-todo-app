@@ -13,6 +13,8 @@ type TodoListProps = {
 	enteringIds?: Set<string>;
 	onToggleError?: () => void;
 	onToggleSuccess?: () => void;
+	onDueDateError?: () => void;
+	onDueDateSuccess?: () => void;
 };
 
 export function TodoList({
@@ -24,6 +26,8 @@ export function TodoList({
 	enteringIds,
 	onToggleError,
 	onToggleSuccess,
+	onDueDateError,
+	onDueDateSuccess,
 }: TodoListProps) {
 	const showSkeleton = isInitialLoading;
 	const showContent = !isInitialLoading;
@@ -58,6 +62,8 @@ export function TodoList({
 										highlighted={todo.id === highlightedId}
 										onToggleError={onToggleError}
 										onToggleSuccess={onToggleSuccess}
+										onDueDateError={onDueDateError}
+										onDueDateSuccess={onDueDateSuccess}
 										onDelete={onDelete}
 										isExiting={exitingIds?.has(todo.id)}
 										isEntering={enteringIds?.has(todo.id)}

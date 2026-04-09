@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('Todo App - Create and View List', () => {
+test.describe('Story 1.5 - Create and View List', () => {
 	test.beforeEach(async ({ page }) => {
 		// Navigate to the app and wait for it to load
 		await page.goto('/');
@@ -12,7 +12,7 @@ test.describe('Todo App - Create and View List', () => {
 		const header = page.locator('h1');
 		await expect(header).toHaveText('My Tasks');
 
-		const countBadge = page.locator('[role="status"]');
+		const countBadge = page.getByRole('status', { name: 'Todo count' });
 		await expect(countBadge).toBeVisible();
 	});
 
@@ -61,7 +61,7 @@ test.describe('Todo App - Create and View List', () => {
 
 	test('adds a todo and count updates', async ({ page }) => {
 		const input = page.locator('[placeholder="Add a new task..."]');
-		const countBadge = page.locator('[role="status"]');
+		const countBadge = page.getByRole('status', { name: 'Todo count' });
 
 		// Get initial count
 		const initialCountText = await countBadge.textContent();
@@ -83,7 +83,7 @@ test.describe('Todo App - Create and View List', () => {
 	});
 
 	test('does not add empty todos', async ({ page }) => {
-		const countBadge = page.locator('[role="status"]');
+		const countBadge = page.getByRole('status', { name: 'Todo count' });
 		const initialCount = await countBadge.textContent();
 
 		const input = page.locator('[placeholder="Add a new task..."]');
@@ -95,7 +95,7 @@ test.describe('Todo App - Create and View List', () => {
 	});
 
 	test('trims whitespace from todo description', async ({ page }) => {
-		const countBadge = page.locator('[role="status"]');
+		const countBadge = page.getByRole('status', { name: 'Todo count' });
 		const initialCount = await countBadge.textContent();
 
 		const input = page.locator('[placeholder="Add a new task..."]');

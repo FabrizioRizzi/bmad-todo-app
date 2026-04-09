@@ -6,9 +6,19 @@ export const createTodoBodySchema = z.object({
 	dueDate: z.union([z.iso.date(), z.null()]).optional(),
 });
 
-export const patchTodoBodySchema = z.object({
-	isCompleted: z.boolean(),
-});
+export const patchTodoBodySchema = z
+	.object({
+		isCompleted: z.boolean().optional(),
+		dueDate: z.union([z.iso.date(), z.null()]).optional(),
+	})
+	.superRefine((data, ctx) => {
+		if (data.isCompleted === undefined && data.dueDate === undefined) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: 'At least one field is required',
+			});
+		}
+	});
 
 export const todoResponseSchema = z.object({
 	id: z.uuid(),

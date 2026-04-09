@@ -29,3 +29,7 @@
 - W3: `text-decoration` is not animatable in CSS — transition declaration on `.todo-card-completed .todo-card-text` is a no-op. Strikethrough still applies, just doesn't animate.
 - W4: Global teardown calls DELETE endpoint not added in this story — may silently fail if endpoint doesn't exist. Pre-existing E2E infrastructure concern.
 - W5: `toggleTodo` does not `encodeURIComponent(id)` — IDs are server-generated UUIDs so URL-unsafe chars are not realistic. Defensive improvement for later.
+
+## Deferred from: code review of 3-1-due-date-support.md (2026-04-09)
+
+- React DayPicker often omits `onSelect` when the user clicks the already-selected day — cannot trigger a second PATCH for the same date without a different UX (e.g. explicit Apply) or library workaround. Deferred as library limitation unless product requires re-apply.

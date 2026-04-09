@@ -49,6 +49,9 @@
 	--text-xs: 0.75rem;
 	--text-xs-weight: 500;
 	--text-xs-leading: 1.3;
+	/* Due date badge — UX TodoCard 11px secondary */
+	--text-due: 0.6875rem;
+	--text-due-leading: 1.3;
 
 	/* Spacing */
 	--space-1: 0.25rem;
@@ -59,6 +62,14 @@
 	--space-6: 2rem;
 	--space-7: 2.5rem;
 	--space-8: 3rem;
+
+	/* TodoCard padding — UX: 12px 14px mobile, 14px 16px sm+ */
+	--card-padding-y-mobile: 0.75rem;
+	--card-padding-x-mobile: 0.875rem;
+	--card-padding-y-desktop: 0.875rem;
+	--card-padding-x-desktop: 1rem;
+	/* Gap below task title to due row — UX mock ~3px */
+	--due-row-gap: 0.1875rem;
 
 	/* Shadows & Elevation */
 	--shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
@@ -201,6 +212,11 @@
 .todo-card-completed {
 	background-color: var(--completed-bg);
 	border-left-color: var(--completed-bar);
+}
+
+.todo-card-overdue {
+	background-color: var(--overdue-bg);
+	border-left-color: var(--overdue-bar);
 }
 
 .todo-card-text {

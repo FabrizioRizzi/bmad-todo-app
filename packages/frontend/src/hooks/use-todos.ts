@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { UndoToastState } from '@/components/undo-toast';
-import { createTodo, deleteTodo, getTodos, type Todo, toggleTodo } from '@/lib/api';
+import { createTodo, deleteTodo, getTodos, patchTodo, type Todo, toggleTodo } from '@/lib/api';
 
 export const todosQueryKey = ['todos'] as const;
 
@@ -50,6 +50,38 @@ export function useToggleTodoMutation() {
 			if (context?.previousTodos) {
 				queryClient.setQueryData(todosQueryKey, context.previousTodos);
 			}
+		},
+		onSuccess: (updatedTodo) => {
+			queryClient.setQueryData<Todo[]>(todosQueryKey, (previous) => {
+				if (!previous) return previous;
+				return previous.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo));
+			});
+		},
+	});
+}
+
+export function useUpdateDueDateMutation(onError?: () => void) {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: ({ id, dueDate }: { id: string; dueDate: string | null }) =>
+			patchTodo(id, { dueDate }),
+		onMutate: async ({ id, dueDate }) => {
+			await queryClient.cancelQueries({ queryKey: todosQueryKey });
+			const previousTodos = queryClient.getQueryData<Todo[]>(todosQueryKey);
+
+			queryClient.setQueryData<Todo[]>(todosQueryKey, (previous) => {
+				if (!previous) return previous;
+				return previous.map((todo) => (todo.id === id ? { ...todo, dueDate } : todo));
+			});
+
+			return { previousTodos };
+		},
+		onError: (_error, _variables, context) => {
+			if (context?.previousTodos) {
+				queryClient.setQueryData(todosQueryKey, context.previousTodos);
+			}
+			onError?.();
 		},
 		onSuccess: (updatedTodo) => {
 			queryClient.setQueryData<Todo[]>(todosQueryKey, (previous) => {

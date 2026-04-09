@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { localDateToIsoDate } from '@/lib/utils';
 import { TodoCard } from './todo-card';
 
 const createQueryClient = () =>
@@ -31,6 +32,8 @@ describe('TodoCard', () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
+		vi.unstubAllGlobals();
 		vi.restoreAllMocks();
 	});
 
@@ -38,11 +41,11 @@ describe('TodoCard', () => {
 		renderWithQueryClient(<TodoCard todo={mockTodo} />);
 		const description = screen.getByText('Test todo');
 		expect(description).toBeInTheDocument();
-		expect(description).toHaveClass('break-words');
+		expect(description).toHaveClass('min-w-0', 'break-words');
 		expect(description).not.toHaveClass('truncate');
 	});
 
-	it('applies truncation for single-token descriptions', () => {
+	it('wraps long single-token descriptions without truncating', () => {
 		renderWithQueryClient(
 			<TodoCard
 				todo={{
@@ -55,8 +58,8 @@ describe('TodoCard', () => {
 		const description = screen.getByText(
 			'SupercalifragilisticexpialidociousSupercalifragilisticexpialidocious',
 		);
-		expect(description).toHaveClass('min-w-0', 'truncate');
-		expect(description).not.toHaveClass('break-words');
+		expect(description).toHaveClass('min-w-0', 'break-words');
+		expect(description).not.toHaveClass('truncate');
 	});
 
 	it('allows wrapping for multi-word descriptions', () => {
@@ -73,7 +76,7 @@ describe('TodoCard', () => {
 		const description = screen.getByText(
 			'One two three four five six seven eight nine ten eleven twelve thirteen fourteen',
 		);
-		expect(description).toHaveClass('break-words');
+		expect(description).toHaveClass('min-w-0', 'break-words');
 		expect(description).not.toHaveClass('truncate');
 	});
 
@@ -182,5 +185,89 @@ describe('TodoCard', () => {
 		renderWithQueryClient(<TodoCard todo={mockTodo} isExiting={false} />);
 		const li = screen.getByText('Test todo').closest('li');
 		expect(li).not.toHaveClass('todo-card-exit-delete');
+	});
+
+	it('shows due date badge with Today when dueDate is the current local day', () => {
+		const today = localDateToIsoDate(new Date());
+		renderWithQueryClient(<TodoCard todo={{ ...mockTodo, dueDate: today }} />);
+		expect(screen.getByText('Today')).toBeInTheDocument();
+	});
+
+	it('applies overdue styling and Overdue label for active past-due todos', () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2026-04-09T12:00:00'));
+		renderWithQueryClient(<TodoCard todo={{ ...mockTodo, dueDate: '2026-04-08' }} />);
+		const card = screen.getByText('Test todo').closest('.todo-card-bar');
+		expect(card).toHaveClass('todo-card-overdue');
+		expect(screen.getByText('Overdue')).toBeInTheDocument();
+	});
+
+	it('does not apply overdue styling for completed todos with past due dates', () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2026-04-09T12:00:00'));
+		renderWithQueryClient(
+			<TodoCard todo={{ ...mockTodo, isCompleted: true, dueDate: '2026-04-08' }} />,
+		);
+		const card = screen.getByText('Test todo').closest('.todo-card-bar');
+		expect(card).not.toHaveClass('todo-card-overdue');
+		expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+	});
+
+	it('shows calendar control for todos without a due date', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} />);
+		expect(screen.getByRole('button', { name: /Set due date for Test todo/i })).toBeInTheDocument();
+	});
+
+	it('sends PATCH with dueDate when selecting a date in the due date popover', async () => {
+		const user = userEvent.setup();
+		const now = new Date();
+		const y = now.getFullYear();
+		const m = String(now.getMonth() + 1).padStart(2, '0');
+		const dueStart = `${y}-${m}-01`;
+		const duePicked = `${y}-${m}-20`;
+
+		const fetchMock = vi.fn((input: RequestInfo, init?: RequestInit) => {
+			const url = typeof input === 'string' ? input : input.url;
+			if (url.includes('/api/todos/1') && init?.method === 'PATCH') {
+				const body = JSON.parse(init?.body as string) as {
+					isCompleted?: boolean;
+					dueDate?: string | null;
+				};
+				return Promise.resolve(
+					new Response(
+						JSON.stringify({
+							id: '1',
+							description: 'Test todo',
+							isCompleted: body.isCompleted ?? false,
+							createdAt: '2026-04-08T00:00:00Z',
+							dueDate: body.dueDate !== undefined ? body.dueDate : dueStart,
+						}),
+						{ status: 200, headers: { 'Content-Type': 'application/json' } },
+					),
+				);
+			}
+			return Promise.reject(new Error(`Unexpected fetch: ${url} ${init?.method}`));
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		renderWithQueryClient(<TodoCard todo={{ ...mockTodo, dueDate: dueStart }} />);
+
+		await user.click(screen.getByRole('button', { name: /Change due date for Test todo/i }));
+		const grid = screen.getByRole('grid');
+		const dayBtn = grid.querySelector(`[data-day="${duePicked}"] button`);
+		if (!(dayBtn instanceof HTMLElement)) {
+			throw new Error('expected picked day button in calendar grid');
+		}
+		await user.click(dayBtn);
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining('/api/todos/1'),
+				expect.objectContaining({
+					method: 'PATCH',
+					body: JSON.stringify({ dueDate: duePicked }),
+				}),
+			);
+		});
 	});
 });

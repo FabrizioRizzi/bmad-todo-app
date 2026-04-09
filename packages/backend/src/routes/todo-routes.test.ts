@@ -260,6 +260,111 @@ describe('todo routes', () => {
 		});
 	});
 
+	it('POST /api/todos without dueDate returns dueDate null', async () => {
+		const response = await app.inject({
+			method: 'POST',
+			url: '/api/todos',
+			payload: { description: 'No date task' },
+		});
+		expect(response.statusCode).toBe(201);
+		expect(response.json()).toMatchObject({
+			description: 'No date task',
+			dueDate: null,
+		});
+	});
+
+	it('POST /api/todos with dueDate includes dueDate in response', async () => {
+		const response = await app.inject({
+			method: 'POST',
+			url: '/api/todos',
+			payload: { description: 'File taxes', dueDate: '2026-04-15' },
+		});
+		expect(response.statusCode).toBe(201);
+		expect(response.json()).toMatchObject({
+			description: 'File taxes',
+			dueDate: '2026-04-15',
+		});
+	});
+
+	it('PATCH /api/todos/:id with dueDate updates due date', async () => {
+		const createResponse = await app.inject({
+			method: 'POST',
+			url: '/api/todos',
+			payload: { description: 'Dated task', dueDate: '2026-04-01' },
+		});
+		const todoId = createResponse.json().id as string;
+
+		const patchResponse = await app.inject({
+			method: 'PATCH',
+			url: `/api/todos/${todoId}`,
+			payload: { dueDate: '2026-05-01' },
+		});
+
+		expect(patchResponse.statusCode).toBe(200);
+		expect(patchResponse.json()).toMatchObject({
+			id: todoId,
+			dueDate: '2026-05-01',
+		});
+	});
+
+	it('PATCH /api/todos/:id with dueDate null clears due date', async () => {
+		const createResponse = await app.inject({
+			method: 'POST',
+			url: '/api/todos',
+			payload: { description: 'Clear me', dueDate: '2026-06-01' },
+		});
+		const todoId = createResponse.json().id as string;
+
+		const patchResponse = await app.inject({
+			method: 'PATCH',
+			url: `/api/todos/${todoId}`,
+			payload: { dueDate: null },
+		});
+
+		expect(patchResponse.statusCode).toBe(200);
+		expect(patchResponse.json()).toMatchObject({
+			dueDate: null,
+		});
+	});
+
+	it('PATCH /api/todos/:id with isCompleted and dueDate updates both', async () => {
+		const createResponse = await app.inject({
+			method: 'POST',
+			url: '/api/todos',
+			payload: { description: 'Both fields' },
+		});
+		const todoId = createResponse.json().id as string;
+
+		const patchResponse = await app.inject({
+			method: 'PATCH',
+			url: `/api/todos/${todoId}`,
+			payload: { isCompleted: true, dueDate: '2026-05-01' },
+		});
+
+		expect(patchResponse.statusCode).toBe(200);
+		expect(patchResponse.json()).toMatchObject({
+			isCompleted: true,
+			dueDate: '2026-05-01',
+		});
+	});
+
+	it('PATCH /api/todos/:id with empty body returns 400', async () => {
+		const createResponse = await app.inject({
+			method: 'POST',
+			url: '/api/todos',
+			payload: { description: 'Task' },
+		});
+		const todoId = createResponse.json().id as string;
+
+		const patchResponse = await app.inject({
+			method: 'PATCH',
+			url: `/api/todos/${todoId}`,
+			payload: {},
+		});
+
+		expect(patchResponse.statusCode).toBe(400);
+	});
+
 	it('DELETE /api/todos/:id removes todo and returns 204 with no body', async () => {
 		const createResponse = await app.inject({
 			method: 'POST',

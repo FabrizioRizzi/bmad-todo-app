@@ -6,12 +6,13 @@ import { TodoList } from '@/components/todo-list';
 import { UndoToast } from '@/components/undo-toast';
 import { useDeleteTodo, useTodosQuery } from '@/hooks/use-todos';
 
-export type ErrorActionType = 'create' | 'toggle' | 'delete';
+export type ErrorActionType = 'create' | 'toggle' | 'delete' | 'dueDate';
 
 const ERROR_MESSAGES: Record<ErrorActionType, string> = {
 	create: "Couldn't add that task — check your connection and try again.",
 	toggle: "Couldn't update that task — try again.",
 	delete: "Couldn't delete that task — try again.",
+	dueDate: "Couldn't update the due date — try again.",
 };
 
 const getErrorMessage = (actionType: ErrorActionType): string => {
@@ -91,6 +92,8 @@ export function App() {
 							enteringIds={enteringIds}
 							onToggleError={() => showError('toggle')}
 							onToggleSuccess={clearError}
+							onDueDateError={() => showError('dueDate')}
+							onDueDateSuccess={clearError}
 						/>
 					)}
 				</section>

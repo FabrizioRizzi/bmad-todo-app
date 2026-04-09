@@ -1,9 +1,12 @@
-import { Plus } from 'lucide-react';
+import { CalendarIcon, Plus } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCreateTodoMutation } from '@/hooks/use-todos';
 import type { Todo } from '@/lib/api';
+import { cn, formatDueDate, isoDateToLocalDate, localDateToIsoDate } from '@/lib/utils';
 
 type AddInputProps = {
 	onCreated?: (todo: Todo) => void;
@@ -14,27 +17,37 @@ export function AddInput({ onCreated, onError }: AddInputProps) {
 	const inputId = useId();
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [value, setValue] = useState('');
+	const [dueDateOpen, setDueDateOpen] = useState(false);
+	const [selectedDueDate, setSelectedDueDate] = useState<string | null>(null);
 	const { mutate, isPending } = useCreateTodoMutation();
 
 	function submit() {
 		const description = value.trim();
 		if (!description) return;
 
-		mutate(
-			{ description },
-			{
-				onSuccess: (todo) => {
-					setValue('');
-					queueMicrotask(() => inputRef.current?.focus());
-					onCreated?.(todo);
-				},
-				onError: () => {
-					onError?.();
-					queueMicrotask(() => inputRef.current?.focus());
-				},
+		const body =
+			selectedDueDate !== null ? { description, dueDate: selectedDueDate } : { description };
+
+		mutate(body, {
+			onSuccess: (todo) => {
+				setValue('');
+				setSelectedDueDate(null);
+				setDueDateOpen(false);
+				queueMicrotask(() => inputRef.current?.focus());
+				onCreated?.(todo);
 			},
-		);
+			onError: () => {
+				onError?.();
+				queueMicrotask(() => inputRef.current?.focus());
+			},
+		});
 	}
+
+	const dueLabel = selectedDueDate !== null ? formatDueDate(selectedDueDate) : null;
+	const dueDateTriggerLabel =
+		selectedDueDate !== null
+			? `Due date ${formatDueDate(selectedDueDate)}, change due date`
+			: 'Set due date';
 
 	return (
 		<form
@@ -60,6 +73,35 @@ export function AddInput({ onCreated, onError }: AddInputProps) {
 					placeholder="Add a new task..."
 					value={value}
 				/>
+				<Popover onOpenChange={setDueDateOpen} open={dueDateOpen}>
+					<PopoverTrigger
+						aria-expanded={dueDateOpen}
+						aria-label={dueDateTriggerLabel}
+						className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'shrink-0')}
+						disabled={isPending}
+						type="button"
+					>
+						{dueLabel ? (
+							<span className="max-w-[5.5rem] truncate px-1 text-[length:var(--text-due)] leading-[var(--text-due-leading)] font-medium">
+								{dueLabel}
+							</span>
+						) : (
+							<CalendarIcon aria-hidden className="size-[var(--space-4)]" />
+						)}
+					</PopoverTrigger>
+					<PopoverContent align="end" className="w-auto p-0">
+						<Calendar
+							mode="single"
+							onSelect={(date) => {
+								if (date) {
+									setSelectedDueDate(localDateToIsoDate(date));
+									setDueDateOpen(false);
+								}
+							}}
+							selected={selectedDueDate ? isoDateToLocalDate(selectedDueDate) : undefined}
+						/>
+					</PopoverContent>
+				</Popover>
 				<Button
 					aria-label="Add task"
 					className="shrink-0"

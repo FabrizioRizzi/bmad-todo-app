@@ -8,6 +8,6 @@ test('homepage loads and displays the app header', async ({ page }) => {
 	await expect(header).toHaveText('My Tasks');
 
 	// Verify the count badge is present
-	const countBadge = page.locator('[role="status"]');
+	const countBadge = page.getByRole('status', { name: 'Todo count' });
 	await expect(countBadge).toBeVisible();
 });

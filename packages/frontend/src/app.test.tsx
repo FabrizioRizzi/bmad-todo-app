@@ -808,3 +808,108 @@ describe('App – Sort todos', () => {
 		expect(screen.queryByRole('button', { name: /sort by status/i })).not.toBeInTheDocument();
 	});
 });
+
+describe('App – Keyboard and focus (Story 4.1)', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+		vi.useRealTimers();
+	});
+
+	it('focuses add input when the last todo in the list is removed (delete commit)', async () => {
+		vi.useFakeTimers({ shouldAdvanceTime: true });
+		const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(
+							JSON.stringify([
+								{
+									id: 'only',
+									description: 'Solo task',
+									isCompleted: false,
+									createdAt: '2026-01-01T00:00:00.000Z',
+									dueDate: null,
+								},
+							]),
+							{ status: 200, headers: { 'Content-Type': 'application/json' } },
+						),
+					);
+				}
+				if (url.includes('/api/todos/') && init?.method === 'DELETE') {
+					return Promise.resolve(new Response(null, { status: 204 }));
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText('Solo task')).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByRole('button', { name: /delete: solo task/i }));
+
+		await act(async () => {
+			vi.advanceTimersByTime(300);
+		});
+
+		const input = screen.getByPlaceholderText(/add a new task/i);
+		await waitFor(() => expect(input).toHaveFocus(), { timeout: 3000 });
+	});
+
+	it('Tab from focused Due sort moves to Reset sort when Reset is visible', async () => {
+		const user = userEvent.setup();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(
+							JSON.stringify([
+								{
+									id: 'a',
+									description: 'Still open',
+									isCompleted: false,
+									createdAt: '2026-01-01T00:00:00.000Z',
+									dueDate: null,
+								},
+							]),
+							{ status: 200, headers: { 'Content-Type': 'application/json' } },
+						),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText('Still open')).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByRole('button', { name: /sort by due date/i }));
+		const reset = screen.getByRole('button', { name: /reset sort/i });
+		expect(reset).toBeInTheDocument();
+
+		const dueBtn = screen.getByRole('button', { name: /sort by due date/i });
+		dueBtn.focus();
+		await user.keyboard('{Tab}');
+		await waitFor(() => expect(reset).toHaveFocus());
+	});
+});

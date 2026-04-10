@@ -108,4 +108,23 @@ describe('UndoToast', () => {
 		const statusEl = screen.getByRole('status');
 		expect(statusEl).toHaveAttribute('aria-live', 'polite');
 	});
+
+	it('calls onDismiss when Escape is pressed', () => {
+		const onDismiss = vi.fn();
+		const state: UndoToastState = { todoId: '1', message: 'Task deleted' };
+		render(<UndoToast state={state} onUndo={vi.fn()} onDismiss={onDismiss} />);
+
+		fireEvent.keyDown(document, { key: 'Escape', bubbles: true });
+
+		expect(onDismiss).toHaveBeenCalledOnce();
+	});
+
+	it('does not call onDismiss on Escape when toast is not visible', () => {
+		const onDismiss = vi.fn();
+		render(<UndoToast state={null} onUndo={vi.fn()} onDismiss={onDismiss} />);
+
+		fireEvent.keyDown(document, { key: 'Escape', bubbles: true });
+
+		expect(onDismiss).not.toHaveBeenCalled();
+	});
 });

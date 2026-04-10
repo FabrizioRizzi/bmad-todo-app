@@ -163,6 +163,28 @@ describe('TodoCard', () => {
 		expect(onDelete).toHaveBeenCalledWith('1');
 	});
 
+	it('calls onDelete when delete button is focused and Enter is pressed', async () => {
+		const user = userEvent.setup();
+		const onDelete = vi.fn();
+		renderWithQueryClient(<TodoCard todo={mockTodo} onDelete={onDelete} />);
+
+		const deleteBtn = screen.getByRole('button', { name: /Delete:/ });
+		deleteBtn.focus();
+		await user.keyboard('{Enter}');
+		expect(onDelete).toHaveBeenCalledWith('1');
+	});
+
+	it('calls onDelete when delete button is focused and Space is pressed', async () => {
+		const user = userEvent.setup();
+		const onDelete = vi.fn();
+		renderWithQueryClient(<TodoCard todo={mockTodo} onDelete={onDelete} />);
+
+		const deleteBtn = screen.getByRole('button', { name: /Delete:/ });
+		deleteBtn.focus();
+		await user.keyboard(' ');
+		expect(onDelete).toHaveBeenCalledWith('1');
+	});
+
 	it('delete button has correct aria-label', () => {
 		renderWithQueryClient(<TodoCard todo={mockTodo} onDelete={vi.fn()} />);
 		const deleteBtn = screen.getByRole('button', { name: 'Delete: Test todo' });

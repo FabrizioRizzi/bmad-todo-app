@@ -41,6 +41,22 @@ export function UndoToast({ state, onUndo, onDismiss }: UndoToastProps) {
 		};
 	}, [state, state?.todoId, onDismiss]);
 
+	useEffect(() => {
+		if (!state) return;
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.key !== 'Escape') return;
+			e.preventDefault();
+			if (timerRef.current) clearTimeout(timerRef.current);
+			if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+			timerRef.current = null;
+			exitTimerRef.current = null;
+			setExiting(false);
+			onDismiss();
+		};
+		document.addEventListener('keydown', onKeyDown, true);
+		return () => document.removeEventListener('keydown', onKeyDown, true);
+	}, [state, onDismiss]);
+
 	if (!state) return null;
 
 	const handleUndo = () => {

@@ -1,3 +1,4 @@
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { cn, type DueSortDirection } from '@/lib/utils';
 import type { TodoFilter } from './filter-tabs';
 
@@ -37,8 +38,60 @@ export function SortRow({
 	filter,
 }: SortRowProps) {
 	const showStatusSort = filter === 'all';
+	const maxFocusIdx = showStatusSort ? 1 : 0;
 	const dueText = dueButtonLabel(activeSort, dueDirection);
 	const statusText = statusButtonLabel(activeSort, statusDirection);
+
+	const [focusIndex, setFocusIndex] = useState(() =>
+		activeSort === 'status' && filter === 'all' ? 1 : 0,
+	);
+	const dueRef = useRef<HTMLButtonElement>(null);
+	const statusRef = useRef<HTMLButtonElement>(null);
+
+	useEffect(() => {
+		if (!showStatusSort) setFocusIndex(0);
+	}, [showStatusSort]);
+
+	const focusAt = (idx: number) => {
+		const next = Math.min(Math.max(0, idx), maxFocusIdx);
+		setFocusIndex(next);
+		requestAnimationFrame(() => {
+			(next === 0 ? dueRef : statusRef).current?.focus();
+		});
+	};
+
+	const onToolbarKeyDown = (e: KeyboardEvent<HTMLButtonElement>, slot: 'due' | 'status') => {
+		const idx = slot === 'due' ? 0 : 1;
+		switch (e.key) {
+			case 'ArrowRight': {
+				e.preventDefault();
+				const next = idx >= maxFocusIdx ? 0 : idx + 1;
+				focusAt(next);
+				break;
+			}
+			case 'ArrowLeft': {
+				e.preventDefault();
+				const next = idx <= 0 ? maxFocusIdx : idx - 1;
+				focusAt(next);
+				break;
+			}
+			case 'Home':
+				e.preventDefault();
+				focusAt(0);
+				break;
+			case 'End':
+				e.preventDefault();
+				focusAt(maxFocusIdx);
+				break;
+			case 'Enter':
+			case ' ':
+				e.preventDefault();
+				onSortChange(slot);
+				break;
+			default:
+				break;
+		}
+	};
 
 	return (
 		<div
@@ -51,7 +104,9 @@ export function SortRow({
 			</span>
 			<div className="flex items-center gap-[var(--space-2)]">
 				<button
+					ref={dueRef}
 					type="button"
+					tabIndex={focusIndex === 0 ? 0 : -1}
 					aria-label={
 						activeSort !== 'due'
 							? 'Sort by due date, soonest due first'
@@ -66,7 +121,11 @@ export function SortRow({
 							? 'cursor-default bg-[color:var(--surface)] font-semibold text-[color:var(--text-primary)] shadow-[var(--shadow-soft)] ring-1 ring-[color:var(--border)]'
 							: 'cursor-pointer bg-transparent font-normal text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]',
 					)}
-					onClick={() => onSortChange('due')}
+					onClick={() => {
+						setFocusIndex(0);
+						onSortChange('due');
+					}}
+					onKeyDown={(e) => onToolbarKeyDown(e, 'due')}
 				>
 					{dueText}
 				</button>
@@ -78,7 +137,9 @@ export function SortRow({
 							role="presentation"
 						/>
 						<button
+							ref={statusRef}
 							type="button"
+							tabIndex={focusIndex === 1 ? 0 : -1}
 							aria-label={
 								activeSort !== 'status'
 									? 'Sort by status, active tasks first'
@@ -93,7 +154,11 @@ export function SortRow({
 									? 'cursor-default bg-[color:var(--surface)] font-semibold text-[color:var(--text-primary)] shadow-[var(--shadow-soft)] ring-1 ring-[color:var(--border)]'
 									: 'cursor-pointer bg-transparent font-normal text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]',
 							)}
-							onClick={() => onSortChange('status')}
+							onClick={() => {
+								setFocusIndex(1);
+								onSortChange('status');
+							}}
+							onKeyDown={(e) => onToolbarKeyDown(e, 'status')}
 						>
 							{statusText}
 						</button>

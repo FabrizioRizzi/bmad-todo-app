@@ -27,7 +27,7 @@ const FILTER_FLIP_SUPPRESS_MS = 280;
 type TodoListProps = {
 	todos: Todo[];
 	filter: TodoFilter;
-	/** Identity of sort mode only (not filter) — FLIP runs when this changes, not when tabs change. */
+	/** Identity of sort mode only (not filter) -- FLIP runs when this changes, not when tabs change. */
 	sortLayoutKey: string;
 	/** Filtered todos in display order (e.g. sorted). Defaults to API order within the filter. */
 	orderedMatchingTodos?: Todo[];
@@ -68,6 +68,8 @@ export function TodoList({
 	const prevFilterFlipRef = useRef(filter);
 	const prevSortLayoutKeyFlipRef = useRef(sortLayoutKey);
 	const noSortFlipUntilRef = useRef(0);
+	/** Snapshot of visibleTodos order before the filter changed, used to keep exiting rows in place. */
+	const prevVisibleOrderRef = useRef<string[]>([]);
 
 	const defaultOrderedMatching = useMemo(
 		() => todos.filter((todo) => todoMatchesFilter(todo, filter)),
@@ -79,7 +81,7 @@ export function TodoList({
 	/*
 	 * Compute filter transition during render (React: set state when prop changes in render).
 	 * useLayoutEffect ran after the first commit with the new filter, so one paint could show only
-	 * matching rows (e.g. 1 completed), then exiting rows appeared → container jumped taller.
+	 * matching rows (e.g. 1 completed), then exiting rows appeared and the container jumped taller.
 	 */
 	if (prevFilterRef.current === null) {
 		prevFilterRef.current = filter;
@@ -116,13 +118,66 @@ export function TodoList({
 		[orderedMatchingTodos],
 	);
 
-	/* Exiting rows first keeps items that are leaving in the same vertical band (e.g. Active→Completed:
-	 * three actives stay on top while they collapse; completed row is appended below — avoids a short
-	 * “only matches” frame that reorders the whole stack). */
+	/*
+	 * Interleave exiting rows at their original positions among sorted matching rows so the
+	 * layout stays visually stable during the exit animation (no reorder flash).
+	 * prevVisibleOrderRef captures the render order *before* a filter change so exiting items
+	 * stay in their original slots while they fade/collapse out.
+	 */
 	const renderTodos = useMemo(() => {
-		const exitingOnly = visibleTodos.filter((t) => !matchingIdSet.has(t.id));
-		return [...exitingOnly, ...orderedMatchingTodos];
+		const exitingSet = new Set(
+			visibleTodos.filter((t) => !matchingIdSet.has(t.id)).map((t) => t.id),
+		);
+
+		if (exitingSet.size === 0) {
+			return orderedMatchingTodos;
+		}
+
+		const prevOrder = prevVisibleOrderRef.current;
+		if (prevOrder.length === 0) {
+			return [...visibleTodos];
+		}
+
+		const matchingById = new Map(orderedMatchingTodos.map((t) => [t.id, t]));
+		const exitingById = new Map(
+			visibleTodos.filter((t) => exitingSet.has(t.id)).map((t) => [t.id, t]),
+		);
+
+		const merged: Todo[] = [];
+		const placed = new Set<string>();
+
+		for (const id of prevOrder) {
+			if (exitingById.has(id) && !placed.has(id)) {
+				merged.push(exitingById.get(id)!);
+				placed.add(id);
+			} else if (matchingById.has(id) && !placed.has(id)) {
+				merged.push(matchingById.get(id)!);
+				placed.add(id);
+			}
+		}
+
+		for (const t of orderedMatchingTodos) {
+			if (!placed.has(t.id)) {
+				merged.push(t);
+				placed.add(t.id);
+			}
+		}
+		for (const t of visibleTodos) {
+			if (exitingSet.has(t.id) && !placed.has(t.id)) {
+				merged.push(t);
+				placed.add(t.id);
+			}
+		}
+
+		return merged;
 	}, [visibleTodos, orderedMatchingTodos, matchingIdSet]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: snapshot stable order for next filter transition
+	useLayoutEffect(() => {
+		if (filterExitingIds.size === 0) {
+			prevVisibleOrderRef.current = renderTodos.map((t) => t.id);
+		}
+	}, [renderTodos, filterExitingIds]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: FLIP tied to sortLayoutKey + filter transitions, not full renderTodos identity
 	useLayoutEffect(() => {

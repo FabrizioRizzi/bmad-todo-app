@@ -38,3 +38,8 @@
 ## Deferred from: code review of 3-1-due-date-support.md (2026-04-09)
 
 - React DayPicker often omits `onSelect` when the user clicks the already-selected day — cannot trigger a second PATCH for the same date without a different UX (e.g. explicit Apply) or library workaround. Deferred as library limitation unless product requires re-apply.
+
+## Deferred from: code review of 4-1-keyboard-navigation-and-focus-management.md (2026-04-10)
+
+- Post-delete focus restore uses `document.querySelector` on `li[data-todo-id]` — couples `App` to list item markup; consider a list-level focus API later (acceptable tradeoff for Story 4.1 scope).
+- Undo toast registers `keydown` on `document` in capture phase — if toast and another overlay (e.g. due date popover) are both open, Escape ordering may surprise users; revisit with a global stacking/focus policy if reported.

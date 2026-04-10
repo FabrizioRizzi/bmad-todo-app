@@ -156,14 +156,14 @@ export function useDeleteTodo(onError?: () => void) {
 	}, [fireDelete]);
 
 	const requestDelete = useCallback(
-		(todoId: string) => {
+		(todoId: string): boolean => {
 			flushPending();
 
 			const currentTodos = queryClient.getQueryData<Todo[]>(todosQueryKey);
 			const removedTodo = currentTodos?.find((t) => t.id === todoId);
 			if (!removedTodo) {
 				onError?.();
-				return;
+				return false;
 			}
 
 			setExitingIds((prev) => new Set(prev).add(todoId));
@@ -192,6 +192,7 @@ export function useDeleteTodo(onError?: () => void) {
 			}, 200);
 
 			commitTimerRef.current = commitTimer;
+			return true;
 		},
 		[queryClient, fireDelete, flushPending, onError],
 	);

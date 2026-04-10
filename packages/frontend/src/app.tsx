@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AddInput } from '@/components/add-input';
 import { AppHeader } from '@/components/app-header';
 import { ErrorBanner } from '@/components/error-banner';
@@ -39,6 +39,8 @@ export function App() {
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [filterAnnouncement, setFilterAnnouncement] = useState('');
 	const prevFilterForLiveRef = useRef<TodoFilter | null>(null);
+	const addInputRef = useRef<HTMLInputElement>(null);
+	const pendingDeleteFocusRef = useRef<{ orderedIds: string[]; deletedId: string } | null>(null);
 	/** Mirrors `sort` for click handlers — avoid calling setState inside another setState updater (Strict Mode runs updaters twice). */
 	const sortRef = useRef<TodoSort>(sort);
 	sortRef.current = sort;
@@ -131,6 +133,40 @@ export function App() {
 	const { requestDelete, undoDelete, dismissToast, toastState, exitingIds, enteringIds } =
 		useDeleteTodo(handleDeleteError);
 
+	const requestDeleteWithFocusRestore = useCallback(
+		(todoId: string) => {
+			const orderedIds = sortedMatchingTodos.map((t) => t.id);
+			pendingDeleteFocusRef.current = { orderedIds, deletedId: todoId };
+			if (!requestDelete(todoId)) {
+				pendingDeleteFocusRef.current = null;
+			}
+		},
+		[requestDelete, sortedMatchingTodos],
+	);
+
+	useLayoutEffect(() => {
+		const pending = pendingDeleteFocusRef.current;
+		if (!pending) return;
+		const { orderedIds, deletedId } = pending;
+		const stillInList = todos.some((t) => t.id === deletedId);
+		if (stillInList) return;
+
+		pendingDeleteFocusRef.current = null;
+		const idx = orderedIds.indexOf(deletedId);
+		const nextId = idx >= 0 && idx < orderedIds.length - 1 ? orderedIds[idx + 1] : null;
+
+		requestAnimationFrame(() => {
+			if (nextId) {
+				const el = document.querySelector<HTMLElement>(
+					`li[data-todo-id="${CSS.escape(nextId)}"] input[type="checkbox"]`,
+				);
+				el?.focus();
+			} else {
+				addInputRef.current?.focus();
+			}
+		});
+	}, [todos]);
+
 	useEffect(() => {
 		if (!highlightedId) return;
 		const timer = setTimeout(() => setHighlightedId(null), 2000);
@@ -146,6 +182,7 @@ export function App() {
 					className="mt-[var(--space-5)] rounded-[var(--radius)] border border-[color:var(--border)] bg-[color:var(--surface)] p-[var(--space-4)] shadow-[var(--shadow-soft)]"
 				>
 					<AddInput
+						ref={addInputRef}
 						onCreated={(todo) => {
 							setHighlightedId(todo.id);
 							clearError();
@@ -204,7 +241,7 @@ export function App() {
 							orderedMatchingTodos={sortedMatchingTodos}
 							sortLayoutKey={sortLayoutKey}
 							todos={todos}
-							onDelete={requestDelete}
+							onDelete={requestDeleteWithFocusRestore}
 							exitingIds={exitingIds}
 							enteringIds={enteringIds}
 							onToggleError={() => showError('toggle')}

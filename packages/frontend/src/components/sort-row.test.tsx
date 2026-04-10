@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { SortRow } from './sort-row';
@@ -164,6 +164,60 @@ describe('SortRow', () => {
 				onSortChange={onSortChange}
 			/>,
 		);
+		expect(screen.queryByRole('button', { name: /sort by status/i })).not.toBeInTheDocument();
+	});
+
+	it('uses roving tabindex between Due and Status on All filter', () => {
+		const onSortChange = vi.fn();
+		render(
+			<SortRow
+				activeSort="due"
+				dueDirection={defaultDue}
+				filter="all"
+				statusDirection="active-first"
+				onSortChange={onSortChange}
+			/>,
+		);
+		const due = screen.getByRole('button', { name: /sort by due date/i });
+		const status = screen.getByRole('button', { name: /sort by status/i });
+		expect(due).toHaveAttribute('tabindex', '0');
+		expect(status).toHaveAttribute('tabindex', '-1');
+	});
+
+	it('moves focus with arrows and activates with Enter', async () => {
+		const user = userEvent.setup();
+		const onSortChange = vi.fn();
+		render(
+			<SortRow
+				activeSort="due"
+				dueDirection={defaultDue}
+				filter="all"
+				statusDirection="active-first"
+				onSortChange={onSortChange}
+			/>,
+		);
+		const statusBtn = screen.getByRole('button', { name: /sort by status/i });
+		screen.getByRole('button', { name: /sort by due date/i }).focus();
+		await user.keyboard('{ArrowRight}');
+		await waitFor(() => expect(statusBtn).toHaveFocus());
+		expect(statusBtn).toHaveAttribute('tabindex', '0');
+		await user.keyboard('{Enter}');
+		expect(onSortChange).toHaveBeenCalledWith('status');
+	});
+
+	it('does not include Status in roving order when filter is Active', () => {
+		const onSortChange = vi.fn();
+		render(
+			<SortRow
+				activeSort="due"
+				dueDirection={defaultDue}
+				filter="active"
+				statusDirection="active-first"
+				onSortChange={onSortChange}
+			/>,
+		);
+		const due = screen.getByRole('button', { name: /sort by due date/i });
+		expect(due).toHaveAttribute('tabindex', '0');
 		expect(screen.queryByRole('button', { name: /sort by status/i })).not.toBeInTheDocument();
 	});
 });

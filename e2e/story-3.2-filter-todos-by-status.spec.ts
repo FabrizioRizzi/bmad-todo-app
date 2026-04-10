@@ -143,10 +143,16 @@ test.describe('Story 3.2 - Filter Todos by Status', () => {
 
 		await filterTab(page, 'Active').click();
 
-		await expect(page.getByRole('status', { name: 'No active tasks' })).toBeVisible({
+		// Wait for filter exit window (TodoList clears filterExitingIds after ~250ms) so the list
+		// swaps to EmptyState instead of the exiting row.
+		await expect(page.getByRole('listitem').filter({ hasText: solo })).toHaveCount(0, {
 			timeout: 5000,
 		});
-		await expect(page.getByText('Add a task above to get started.', { exact: true })).toBeVisible();
+		const listRegion = page.locator('#todo-list');
+		await expect(listRegion.getByText('No active tasks')).toBeVisible({ timeout: 5000 });
+		await expect(
+			listRegion.getByText('Add a task above to get started.', { exact: true }),
+		).toBeVisible();
 	});
 
 	test('Completed filter empty state when no completed todos exist', async ({ page }) => {
@@ -159,11 +165,13 @@ test.describe('Story 3.2 - Filter Todos by Status', () => {
 
 		await filterTab(page, 'Completed').click();
 
-		await expect(page.getByRole('status', { name: 'No completed tasks' })).toBeVisible({
+		await expect(page.getByRole('listitem').filter({ hasText: open })).toHaveCount(0, {
 			timeout: 5000,
 		});
+		const listRegion = page.locator('#todo-list');
+		await expect(listRegion.getByText('No completed tasks')).toBeVisible({ timeout: 5000 });
 		await expect(
-			page.getByText('Tasks you complete will appear here.', { exact: true }),
+			listRegion.getByText('Tasks you complete will appear here.', { exact: true }),
 		).toBeVisible();
 	});
 

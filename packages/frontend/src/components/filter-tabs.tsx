@@ -1,3 +1,4 @@
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 export type TodoFilter = 'all' | 'active' | 'completed';
@@ -26,18 +27,68 @@ function tabIndex(filter: TodoFilter): number {
 
 export function FilterTabs({ activeFilter, onFilterChange, counts }: FilterTabsProps) {
 	const activeIndex = tabIndex(activeFilter);
+	const [focusIndex, setFocusIndex] = useState(activeIndex);
+	const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+	useEffect(() => {
+		setFocusIndex(tabIndex(activeFilter));
+	}, [activeFilter]);
+
+	const focusTab = (index: number) => {
+		const len = TABS.length;
+		const next = ((index % len) + len) % len;
+		setFocusIndex(next);
+		requestAnimationFrame(() => tabRefs.current[next]?.focus());
+	};
+
+	const activateIndex = (index: number) => {
+		const tab = TABS[index];
+		if (tab) onFilterChange(tab.id);
+	};
+
+	const onTabKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+		switch (e.key) {
+			case 'ArrowRight':
+				e.preventDefault();
+				focusTab(index + 1);
+				break;
+			case 'ArrowLeft':
+				e.preventDefault();
+				focusTab(index - 1);
+				break;
+			case 'Home':
+				e.preventDefault();
+				focusTab(0);
+				break;
+			case 'End':
+				e.preventDefault();
+				focusTab(TABS.length - 1);
+				break;
+			case 'Enter':
+			case ' ':
+				e.preventDefault();
+				activateIndex(index);
+				break;
+			default:
+				break;
+		}
+	};
 
 	return (
 		<div className="relative w-full">
 			<div className="flex w-full" role="tablist">
-				{TABS.map((tab) => {
+				{TABS.map((tab, index) => {
 					const selected = tab.id === activeFilter;
 					const tabCount = counts[tab.id];
 					return (
 						<button
 							key={tab.id}
+							ref={(el) => {
+								tabRefs.current[index] = el;
+							}}
 							type="button"
 							role="tab"
+							tabIndex={focusIndex === index ? 0 : -1}
 							aria-selected={selected}
 							aria-controls="todo-list"
 							aria-label={`${tab.label}, ${tabCount} tasks`}
@@ -49,6 +100,7 @@ export function FilterTabs({ activeFilter, onFilterChange, counts }: FilterTabsP
 									: 'cursor-pointer text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]',
 							)}
 							onClick={() => onFilterChange(tab.id)}
+							onKeyDown={(e) => onTabKeyDown(e, index)}
 						>
 							{tab.label}
 						</button>

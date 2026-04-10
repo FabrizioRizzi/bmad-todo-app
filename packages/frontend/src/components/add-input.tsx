@@ -1,5 +1,5 @@
 import { CalendarIcon, Plus } from 'lucide-react';
-import { useId, useRef, useState } from 'react';
+import { forwardRef, type Ref, useId, useRef, useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,18 @@ type AddInputProps = {
 	onError?: () => void;
 };
 
-export function AddInput({ onCreated, onError }: AddInputProps) {
+function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
+	if (!ref) return;
+	if (typeof ref === 'function') ref(value);
+	else ref.current = value;
+}
+
+export const AddInput = forwardRef<HTMLInputElement, AddInputProps>(function AddInput(
+	{ onCreated, onError },
+	forwardedRef,
+) {
 	const inputId = useId();
-	const inputRef = useRef<HTMLInputElement>(null);
+	const inputRef = useRef<HTMLInputElement | null>(null);
 	const [value, setValue] = useState('');
 	const [dueDateOpen, setDueDateOpen] = useState(false);
 	const [selectedDueDate, setSelectedDueDate] = useState<string | null>(null);
@@ -63,7 +72,10 @@ export function AddInput({ onCreated, onError }: AddInputProps) {
 			</label>
 			<div className="flex gap-[var(--space-2)]">
 				<Input
-					ref={inputRef}
+					ref={(el) => {
+						inputRef.current = el;
+						assignRef(forwardedRef, el);
+					}}
 					autoComplete="off"
 					className="flex-1"
 					disabled={isPending}
@@ -114,4 +126,4 @@ export function AddInput({ onCreated, onError }: AddInputProps) {
 			</div>
 		</form>
 	);
-}
+});

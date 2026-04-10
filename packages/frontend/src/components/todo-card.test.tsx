@@ -124,10 +124,16 @@ describe('TodoCard', () => {
 		expect(checkbox).not.toHaveAttribute('aria-busy');
 	});
 
-	it('has appropriate aria-label', () => {
+	it('has appropriate aria-label for active todo', () => {
 		renderWithQueryClient(<TodoCard todo={mockTodo} />);
 		const checkbox = screen.getByRole('checkbox');
-		expect(checkbox).toHaveAttribute('aria-label', 'Toggle completion for: Test todo');
+		expect(checkbox).toHaveAttribute('aria-label', 'Mark Test todo as complete');
+	});
+
+	it('has appropriate aria-label for completed todo', () => {
+		renderWithQueryClient(<TodoCard todo={{ ...mockTodo, isCompleted: true }} />);
+		const checkbox = screen.getByRole('checkbox');
+		expect(checkbox).toHaveAttribute('aria-label', 'Mark Test todo as active');
 	});
 
 	it('applies highlighted class when highlighted prop is true', () => {
@@ -291,5 +297,70 @@ describe('TodoCard', () => {
 				}),
 			);
 		});
+	});
+
+	it('due date trigger says "Set due date for [task]" when no date is set', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} />);
+		expect(screen.getByRole('button', { name: 'Set due date for Test todo' })).toBeInTheDocument();
+	});
+
+	it('due date trigger says "Change due date for [task]" when date exists', () => {
+		renderWithQueryClient(<TodoCard todo={{ ...mockTodo, dueDate: '2026-05-01' }} />);
+		expect(
+			screen.getByRole('button', { name: 'Change due date for Test todo' }),
+		).toBeInTheDocument();
+	});
+
+	it('delete button aria-label includes task description', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} onDelete={vi.fn()} />);
+		expect(screen.getByRole('button', { name: 'Delete: Test todo' })).toBeInTheDocument();
+	});
+
+	it('delete button aria-label safely truncates very long task descriptions', () => {
+		const veryLongDescription = `${'Very long task '.repeat(20)}suffix`;
+		renderWithQueryClient(
+			<TodoCard todo={{ ...mockTodo, description: veryLongDescription }} onDelete={vi.fn()} />,
+		);
+		const deleteButton = screen.getByRole('button', { name: /^Delete:\s/ });
+		const label = deleteButton.getAttribute('aria-label');
+		expect(label).toBeTruthy();
+		expect(label?.length).toBeLessThan(veryLongDescription.length);
+		expect(label?.endsWith('...')).toBe(true);
+	});
+
+	it('delete button SVG is aria-hidden', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} onDelete={vi.fn()} />);
+		const deleteBtn = screen.getByRole('button', { name: 'Delete: Test todo' });
+		const svg = deleteBtn.querySelector('svg');
+		expect(svg).toHaveAttribute('aria-hidden', 'true');
+	});
+
+	it('delete button has 44×44px touch target', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} onDelete={vi.fn()} />);
+		const deleteBtn = screen.getByRole('button', { name: /Delete:/ });
+		expect(deleteBtn).toHaveClass('h-11', 'w-11');
+	});
+
+	it('checkbox wrapper has 44×44px touch target', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} />);
+		const checkbox = screen.getByRole('checkbox');
+		const wrapper = checkbox.closest('.relative');
+		expect(wrapper).toHaveClass('h-11', 'w-11');
+	});
+
+	it('delete button has responsive visibility classes (mobile visible, desktop hover/focus)', () => {
+		renderWithQueryClient(<TodoCard todo={mockTodo} onDelete={vi.fn()} />);
+		const deleteBtn = screen.getByRole('button', { name: /Delete:/ });
+		expect(deleteBtn).toHaveClass('opacity-50');
+		expect(deleteBtn.className).toContain('lg:opacity-0');
+		expect(deleteBtn.className).toContain('lg:group-hover:opacity-100');
+		expect(deleteBtn.className).toContain('lg:focus-visible:opacity-100');
+	});
+
+	it('checkmark SVG is aria-hidden when completed', () => {
+		renderWithQueryClient(<TodoCard todo={{ ...mockTodo, isCompleted: true }} />);
+		const svgs = document.querySelectorAll('svg[aria-hidden="true"]');
+		const checkmarkSvg = [...svgs].find((svg) => svg.querySelector('path[d="M5 13l4 4L19 7"]'));
+		expect(checkmarkSvg).toBeTruthy();
 	});
 });

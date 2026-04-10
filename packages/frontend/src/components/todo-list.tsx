@@ -147,11 +147,13 @@ export function TodoList({
 		const placed = new Set<string>();
 
 		for (const id of prevOrder) {
-			if (exitingById.has(id) && !placed.has(id)) {
-				merged.push(exitingById.get(id)!);
+			const exitingTodo = exitingById.get(id);
+			const matchingTodo = matchingById.get(id);
+			if (exitingTodo && !placed.has(id)) {
+				merged.push(exitingTodo);
 				placed.add(id);
-			} else if (matchingById.has(id) && !placed.has(id)) {
-				merged.push(matchingById.get(id)!);
+			} else if (matchingTodo && !placed.has(id)) {
+				merged.push(matchingTodo);
 				placed.add(id);
 			}
 		}
@@ -172,7 +174,6 @@ export function TodoList({
 		return merged;
 	}, [visibleTodos, orderedMatchingTodos, matchingIdSet]);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: snapshot stable order for next filter transition
 	useLayoutEffect(() => {
 		if (filterExitingIds.size === 0) {
 			prevVisibleOrderRef.current = renderTodos.map((t) => t.id);

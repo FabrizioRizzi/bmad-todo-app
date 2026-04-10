@@ -7,10 +7,14 @@ test.describe('Story 2.1 - Toggle Todo Completion', () => {
 		await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
 	});
 
+	function escapeRegExp(value: string) {
+		return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
 	function todoCheckbox(page: import('@playwright/test').Page, description: string) {
-		return page.locator(
-			`input[type="checkbox"][aria-label="Toggle completion for: ${description}"]`,
-		);
+		return page.getByRole('checkbox', {
+			name: new RegExp(`^Mark ${escapeRegExp(description)} as (?:complete|active)$`),
+		});
 	}
 
 	function todoCard(page: import('@playwright/test').Page, description: string) {
@@ -142,7 +146,7 @@ test.describe('Story 2.1 - Toggle Todo Completion', () => {
 		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 5000 });
 
 		const checkbox = todoCheckbox(page, todoText);
-		await expect(checkbox).toHaveAttribute('aria-label', `Toggle completion for: ${todoText}`);
+		await expect(checkbox).toHaveAttribute('aria-label', `Mark ${todoText} as complete`);
 		await expect(checkbox).toHaveAttribute('type', 'checkbox');
 	});
 });

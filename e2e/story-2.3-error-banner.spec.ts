@@ -3,6 +3,16 @@ import { expect, test } from '@playwright/test';
 const AUTO_DISMISS_MS = 8000;
 
 test.describe('Story 2.3 - Error Banner Component', () => {
+	function escapeRegExp(value: string) {
+		return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
+	function todoCheckbox(page: import('@playwright/test').Page, description: string) {
+		return page.getByRole('checkbox', {
+			name: new RegExp(`^Mark ${escapeRegExp(description)} as (?:complete|active)$`),
+		});
+	}
+
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
 		await page.waitForLoadState('domcontentloaded');
@@ -66,9 +76,7 @@ test.describe('Story 2.3 - Error Banner Component', () => {
 			}
 		});
 
-		const checkbox = page.locator(
-			`input[type="checkbox"][aria-label="Toggle completion for: ${todoText}"]`,
-		);
+		const checkbox = todoCheckbox(page, todoText);
 		await checkbox.click();
 
 		const banner = errorBanner(page);
@@ -315,9 +323,7 @@ test.describe('Story 2.3 - Error Banner Component', () => {
 		await expect(banner).toContainText("Couldn't add that task");
 
 		// Now trigger a toggle error
-		const checkbox = page.locator(
-			`input[type="checkbox"][aria-label="Toggle completion for: ${todoText}"]`,
-		);
+		const checkbox = todoCheckbox(page, todoText);
 		await checkbox.click();
 
 		// Banner should now show toggle error, not create error

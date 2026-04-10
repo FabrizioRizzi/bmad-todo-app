@@ -205,6 +205,24 @@ describe('SortRow', () => {
 		expect(onSortChange).toHaveBeenCalledWith('status');
 	});
 
+	it('sort buttons have min-h-[44px] min-w-[44px] for touch targets', () => {
+		render(
+			<SortRow
+				activeSort="due"
+				dueDirection={defaultDue}
+				filter="all"
+				statusDirection="active-first"
+				onSortChange={vi.fn()}
+			/>,
+		);
+		const dueBtn = screen.getByRole('button', { name: /sort by due date/i });
+		const statusBtn = screen.getByRole('button', { name: /sort by status/i });
+		for (const btn of [dueBtn, statusBtn]) {
+			expect(btn.className).toContain('min-h-[44px]');
+			expect(btn.className).toContain('min-w-[44px]');
+		}
+	});
+
 	it('does not include Status in roving order when filter is Active', () => {
 		const onSortChange = vi.fn();
 		render(

@@ -38,6 +38,8 @@ export function App() {
 	const [highlightedId, setHighlightedId] = useState<string | null>(null);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [filterAnnouncement, setFilterAnnouncement] = useState('');
+	const [createAnnouncement, setCreateAnnouncement] = useState('');
+	const [createAnnouncementVersion, setCreateAnnouncementVersion] = useState(0);
 	const prevFilterForLiveRef = useRef<TodoFilter | null>(null);
 	const addInputRef = useRef<HTMLInputElement>(null);
 	const pendingDeleteFocusRef = useRef<{ orderedIds: string[]; deletedId: string } | null>(null);
@@ -168,14 +170,26 @@ export function App() {
 	}, [todos]);
 
 	useEffect(() => {
+		if (window.matchMedia('(min-width: 1024px)').matches) {
+			addInputRef.current?.focus();
+		}
+	}, []);
+
+	useEffect(() => {
 		if (!highlightedId) return;
 		const timer = setTimeout(() => setHighlightedId(null), 2000);
 		return () => clearTimeout(timer);
 	}, [highlightedId]);
 
+	useEffect(() => {
+		if (createAnnouncementVersion === 0 || !createAnnouncement) return;
+		const timer = setTimeout(() => setCreateAnnouncement(''), 1000);
+		return () => clearTimeout(timer);
+	}, [createAnnouncementVersion, createAnnouncement]);
+
 	return (
-		<div className="min-h-screen bg-background">
-			<main className="mx-auto w-full max-w-[40rem] px-[var(--space-4)] py-[var(--space-8)] sm:px-[var(--space-6)]">
+		<div className="min-h-screen overflow-x-hidden bg-background">
+			<main className="mx-auto w-full max-w-[40rem] px-[var(--space-4)] py-[var(--space-8)] md:px-[var(--space-5)] lg:px-[var(--space-6)]">
 				<AppHeader count={activeCount} />
 				<section
 					aria-label="Add new todo"
@@ -186,6 +200,8 @@ export function App() {
 						onCreated={(todo) => {
 							setHighlightedId(todo.id);
 							clearError();
+							setCreateAnnouncement('Task added');
+							setCreateAnnouncementVersion((v) => v + 1);
 						}}
 						onError={() => showError('create')}
 					/>
@@ -212,15 +228,23 @@ export function App() {
 						<button
 							type="button"
 							aria-label="Reset sort to due date, soonest first"
-							className="shrink-0 rounded-[var(--radius-sm)] border-none bg-transparent px-[var(--space-2)] py-[var(--space-2)] text-[length:var(--text-sm)] leading-[var(--text-sm-leading)] font-medium text-[color:var(--accent)] underline-offset-2 transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:underline"
+							className="shrink-0 rounded-[var(--radius-sm)] border-none bg-transparent min-h-[44px] px-[var(--space-2)] py-[var(--space-2)] text-[length:var(--text-sm)] leading-[var(--text-sm-leading)] font-medium text-[color:var(--accent)] underline-offset-2 transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:underline"
 							onClick={handleResetSort}
 						>
 							Reset sort
 						</button>
 					) : null}
 				</div>
-				<div aria-live="polite" className="sr-only">
+				<div aria-live="polite" className="sr-only" data-testid="filter-announcement">
 					{filterAnnouncement}
+				</div>
+				<div
+					key={createAnnouncementVersion}
+					aria-live="polite"
+					className="sr-only"
+					data-testid="create-announcement"
+				>
+					{createAnnouncement}
 				</div>
 				<section
 					aria-label="Todo list"

@@ -1,6 +1,16 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Story 4.1 - Keyboard navigation and focus', () => {
+	function escapeRegExp(value: string) {
+		return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
+	function todoCheckbox(page: import('@playwright/test').Page, description: string) {
+		return page.getByRole('checkbox', {
+			name: new RegExp(`^Mark ${escapeRegExp(description)} as (?:complete|active)$`),
+		});
+	}
+
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
 		await page.waitForLoadState('domcontentloaded');
@@ -65,9 +75,7 @@ test.describe('Story 4.1 - Keyboard navigation and focus', () => {
 	test('Space toggles completion when checkbox is focused', async ({ page }) => {
 		const label = `Space toggle ${Date.now()}`;
 		await createTodo(page, label);
-		const checkbox = page.getByRole('checkbox', {
-			name: new RegExp(`toggle completion for:\\s*${label}`, 'i'),
-		});
+		const checkbox = todoCheckbox(page, label);
 		await checkbox.focus();
 		await expect(checkbox).toBeFocused();
 		await page.keyboard.press('Space');

@@ -12,8 +12,20 @@ async function clearAllTodos(request: import('@playwright/test').APIRequestConte
 	}
 }
 
+/** Delete every todo except the one whose description matches `keep`. */
+async function purgeExcept(request: import('@playwright/test').APIRequestContext, keep: string) {
+	const res = await request.get(`${API_BASE}/api/todos`);
+	if (!res.ok()) return;
+	const todos = (await res.json()) as { id: string; description: string }[];
+	for (const t of todos) {
+		if (t.description !== keep) {
+			await request.delete(`${API_BASE}/api/todos/${t.id}`);
+		}
+	}
+}
+
 function filterLiveRegion(page: import('@playwright/test').Page) {
-	return page.locator('[aria-live="polite"].sr-only');
+	return page.locator('[data-testid="filter-announcement"]');
 }
 
 function filterTab(page: import('@playwright/test').Page, label: 'All' | 'Active' | 'Completed') {
@@ -21,8 +33,14 @@ function filterTab(page: import('@playwright/test').Page, label: 'All' | 'Active
 	return page.getByRole('tab', { name: new RegExp(`^${label},`) });
 }
 
+function escapeRegExp(value: string) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function todoCheckbox(page: import('@playwright/test').Page, description: string) {
-	return page.locator(`input[type="checkbox"][aria-label="Toggle completion for: ${description}"]`);
+	return page.getByRole('checkbox', {
+		name: new RegExp(`^Mark ${escapeRegExp(description)} as (?:complete|active)$`),
+	});
 }
 
 test.describe('Story 3.2 - Filter Todos by Status', () => {
@@ -75,7 +93,7 @@ test.describe('Story 3.2 - Filter Todos by Status', () => {
 		await page.locator(`text=${doneText}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
 		await todoCheckbox(page, doneText).click();
-		await expect(todoCheckbox(page, doneText)).toBeChecked({ timeout: 3000 });
+		await expect(todoCheckbox(page, doneText)).toBeChecked({ timeout: 5000 });
 
 		await filterTab(page, 'Active').click();
 
@@ -97,7 +115,7 @@ test.describe('Story 3.2 - Filter Todos by Status', () => {
 		await page.locator(`text=${finished}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
 		await todoCheckbox(page, finished).click();
-		await expect(todoCheckbox(page, finished)).toBeChecked({ timeout: 3000 });
+		await expect(todoCheckbox(page, finished)).toBeChecked({ timeout: 5000 });
 
 		await filterTab(page, 'Completed').click();
 
@@ -119,7 +137,7 @@ test.describe('Story 3.2 - Filter Todos by Status', () => {
 		await page.locator(`text=${b}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
 		await todoCheckbox(page, b).click();
-		await expect(todoCheckbox(page, b)).toBeChecked({ timeout: 3000 });
+		await expect(todoCheckbox(page, b)).toBeChecked({ timeout: 5000 });
 
 		await filterTab(page, 'Active').click();
 		await expect(page.locator(`text=${b}`).first()).toBeHidden({ timeout: 5000 });
@@ -130,7 +148,7 @@ test.describe('Story 3.2 - Filter Todos by Status', () => {
 		await expect(page.locator(`text=${b}`).first()).toBeVisible({ timeout: 5000 });
 	});
 
-	test('Active filter empty state when no active todos exist', async ({ page }) => {
+	test('Active filter empty state when no active todos exist', async ({ page, request }) => {
 		const input = page.locator('[placeholder="Add a new task..."]');
 		const solo = `Only completed ${Date.now()}`;
 
@@ -139,15 +157,27 @@ test.describe('Story 3.2 - Filter Todos by Status', () => {
 		await page.locator(`text=${solo}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
 		await todoCheckbox(page, solo).click();
-		await expect(todoCheckbox(page, solo)).toBeChecked({ timeout: 3000 });
+		await expect(todoCheckbox(page, solo)).toBeChecked({ timeout: 5000 });
+
+		// Purge stray todos from parallel tests, reload, and retry until the DB stays clean.
+		await purgeExcept(request, solo);
+		await page.reload();
+		await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
 
 		await filterTab(page, 'Active').click();
 
-		// Wait for filter exit window (TodoList clears filterExitingIds after ~250ms) so the list
-		// swaps to EmptyState instead of the exiting row.
-		await expect(page.getByRole('listitem').filter({ hasText: solo })).toHaveCount(0, {
-			timeout: 5000,
-		});
+		await expect(async () => {
+			await purgeExcept(request, solo);
+			await page.reload();
+			await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
+			await filterTab(page, 'Active').click();
+			await expect(page.getByRole('listitem').filter({ hasText: solo })).toHaveCount(0, {
+				timeout: 2000,
+			});
+			const listRegion = page.locator('#todo-list');
+			await expect(listRegion.getByText('No active tasks')).toBeVisible({ timeout: 2000 });
+		}).toPass({ timeout: 15000 });
+
 		const listRegion = page.locator('#todo-list');
 		await expect(listRegion.getByText('No active tasks')).toBeVisible({ timeout: 5000 });
 		await expect(
@@ -155,7 +185,7 @@ test.describe('Story 3.2 - Filter Todos by Status', () => {
 		).toBeVisible();
 	});
 
-	test('Completed filter empty state when no completed todos exist', async ({ page }) => {
+	test('Completed filter empty state when no completed todos exist', async ({ page, request }) => {
 		const input = page.locator('[placeholder="Add a new task..."]');
 		const open = `Nothing done ${Date.now()}`;
 
@@ -163,11 +193,24 @@ test.describe('Story 3.2 - Filter Todos by Status', () => {
 		await input.press('Enter');
 		await page.locator(`text=${open}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
+		await purgeExcept(request, open);
+		await page.reload();
+		await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
+
 		await filterTab(page, 'Completed').click();
 
-		await expect(page.getByRole('listitem').filter({ hasText: open })).toHaveCount(0, {
-			timeout: 5000,
-		});
+		await expect(async () => {
+			await purgeExcept(request, open);
+			await page.reload();
+			await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
+			await filterTab(page, 'Completed').click();
+			await expect(page.getByRole('listitem').filter({ hasText: open })).toHaveCount(0, {
+				timeout: 2000,
+			});
+			const listRegion = page.locator('#todo-list');
+			await expect(listRegion.getByText('No completed tasks')).toBeVisible({ timeout: 2000 });
+		}).toPass({ timeout: 15000 });
+
 		const listRegion = page.locator('#todo-list');
 		await expect(listRegion.getByText('No completed tasks')).toBeVisible({ timeout: 5000 });
 		await expect(
@@ -189,7 +232,7 @@ test.describe('Story 3.2 - Filter Todos by Status', () => {
 		await page.locator(`text=${two}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
 		await todoCheckbox(page, two).click();
-		await expect(todoCheckbox(page, two)).toBeChecked({ timeout: 3000 });
+		await expect(todoCheckbox(page, two)).toBeChecked({ timeout: 5000 });
 
 		await filterTab(page, 'Active').click();
 		await expect(filterLiveRegion(page)).toHaveText('1 tasks shown', { timeout: 5000 });

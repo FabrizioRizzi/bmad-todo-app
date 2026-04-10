@@ -94,7 +94,7 @@ export function FilterTabs({ activeFilter, onFilterChange, counts }: FilterTabsP
 							aria-label={`${tab.label}, ${tabCount} tasks`}
 							id={`filter-tab-${tab.id}`}
 							className={cn(
-								'flex-1 border-none bg-transparent py-[var(--space-3)] text-center text-[length:var(--text-sm)] leading-[var(--text-sm-leading)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]',
+								'flex-1 border-none bg-transparent min-h-[44px] py-[var(--space-3)] text-center text-[length:var(--text-sm)] leading-[var(--text-sm-leading)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]',
 								selected
 									? 'text-[color:var(--accent)] [font-weight:var(--text-sm-weight)]'
 									: 'cursor-pointer text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]',

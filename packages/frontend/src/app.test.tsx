@@ -114,7 +114,7 @@ describe('App – Error Banner Integration', () => {
 		});
 
 		const checkbox = screen.getByRole('checkbox', {
-			name: /toggle completion for: existing task/i,
+			name: /mark existing task as complete/i,
 		});
 		await user.click(checkbox);
 
@@ -300,7 +300,7 @@ describe('App – Error Banner Integration', () => {
 		});
 
 		const checkbox = screen.getByRole('checkbox', {
-			name: /toggle completion for: existing task/i,
+			name: /mark existing task as complete/i,
 		});
 		await user.click(checkbox);
 
@@ -525,7 +525,7 @@ describe('App – Todo filters', () => {
 		await user.click(screen.getByRole('tab', { name: /active, 1 tasks/i }));
 
 		await waitFor(() => {
-			const live = container.querySelector('[aria-live="polite"].sr-only');
+			const live = container.querySelector('[data-testid="filter-announcement"]');
 			expect(live?.textContent).toBe('1 tasks shown');
 		});
 	});
@@ -806,6 +806,370 @@ describe('App – Sort todos', () => {
 			);
 		});
 		expect(screen.queryByRole('button', { name: /sort by status/i })).not.toBeInTheDocument();
+	});
+});
+
+describe('App – Screen reader & ARIA (Story 4.2)', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+		vi.useRealTimers();
+	});
+
+	it('announces "Task added" in a polite live region after successful create', async () => {
+		const user = userEvent.setup();
+		const createdTodo = {
+			id: 'new-1',
+			description: 'Buy groceries',
+			isCompleted: false,
+			createdAt: '2026-04-08T12:00:00.000Z',
+			dueDate: null,
+		};
+
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(JSON.stringify([]), {
+							status: 200,
+							headers: { 'Content-Type': 'application/json' },
+						}),
+					);
+				}
+				if (url.includes('/api/todos') && init?.method === 'POST') {
+					return Promise.resolve(
+						new Response(JSON.stringify(createdTodo), {
+							status: 201,
+							headers: { 'Content-Type': 'application/json' },
+						}),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		const { container } = render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByPlaceholderText(/add a new task/i)).toBeInTheDocument();
+		});
+
+		const input = screen.getByPlaceholderText(/add a new task/i);
+		await user.type(input, 'Buy groceries{enter}');
+
+		await waitFor(() => {
+			const liveRegions = container.querySelectorAll('[aria-live="polite"]');
+			const texts = [...liveRegions].map((el) => el.textContent);
+			expect(texts).toContain('Task added');
+		});
+	});
+
+	it('clears "Task added" announcement after delay to allow repeat', async () => {
+		vi.useFakeTimers({ shouldAdvanceTime: true });
+		const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+		const createdTodo = {
+			id: 'new-1',
+			description: 'Buy groceries',
+			isCompleted: false,
+			createdAt: '2026-04-08T12:00:00.000Z',
+			dueDate: null,
+		};
+
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(JSON.stringify([]), {
+							status: 200,
+							headers: { 'Content-Type': 'application/json' },
+						}),
+					);
+				}
+				if (url.includes('/api/todos') && init?.method === 'POST') {
+					return Promise.resolve(
+						new Response(JSON.stringify(createdTodo), {
+							status: 201,
+							headers: { 'Content-Type': 'application/json' },
+						}),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		const { container } = render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByPlaceholderText(/add a new task/i)).toBeInTheDocument();
+		});
+
+		const input = screen.getByPlaceholderText(/add a new task/i);
+		await user.type(input, 'Buy groceries{enter}');
+
+		await waitFor(() => {
+			const liveRegions = container.querySelectorAll('[aria-live="polite"]');
+			const texts = [...liveRegions].map((el) => el.textContent);
+			expect(texts).toContain('Task added');
+		});
+
+		act(() => {
+			vi.advanceTimersByTime(1100);
+		});
+
+		await waitFor(() => {
+			const liveRegions = container.querySelectorAll('[aria-live="polite"]');
+			const createRegion = [...liveRegions].find((el) => el.textContent === 'Task added');
+			expect(createRegion).toBeUndefined();
+		});
+	});
+
+	it('add button has aria-label "Add task"', () => {
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+		expect(screen.getByRole('button', { name: 'Add task' })).toBeInTheDocument();
+	});
+
+	it('add section uses <form> element for native submit', () => {
+		const queryClient = createTestQueryClient();
+		const { container } = render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+		const form = container.querySelector('form');
+		expect(form).toBeInTheDocument();
+	});
+
+	it('todo list renders as <ul> with <li> items', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(
+							JSON.stringify([
+								{
+									id: 'a',
+									description: 'Task A',
+									isCompleted: false,
+									createdAt: '2026-01-01T00:00:00.000Z',
+									dueDate: null,
+								},
+							]),
+							{ status: 200, headers: { 'Content-Type': 'application/json' } },
+						),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		const { container } = render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText('Task A')).toBeInTheDocument();
+		});
+
+		const todoListDiv = container.querySelector('#todo-list');
+		expect(todoListDiv).toBeInTheDocument();
+		const ul = todoListDiv?.querySelector('ul');
+		expect(ul).toBeInTheDocument();
+		const lis = ul?.querySelectorAll(':scope > li');
+		expect(lis?.length).toBe(1);
+	});
+
+	it('error banner uses role="alert" and aria-live="assertive"', async () => {
+		const user = userEvent.setup();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(JSON.stringify([]), {
+							status: 200,
+							headers: { 'Content-Type': 'application/json' },
+						}),
+					);
+				}
+				if (url.includes('/api/todos') && init?.method === 'POST') {
+					return Promise.resolve(
+						new Response(JSON.stringify({ statusCode: 500, message: 'fail' }), {
+							status: 500,
+							headers: { 'Content-Type': 'application/json' },
+						}),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const queryClient = createTestQueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByPlaceholderText(/add a new task/i)).toBeInTheDocument();
+		});
+
+		const input = screen.getByPlaceholderText(/add a new task/i);
+		await user.type(input, 'Fail task{enter}');
+
+		await waitFor(() => {
+			const alert = screen.getByRole('alert');
+			expect(alert).toHaveAttribute('aria-live', 'assertive');
+		});
+	});
+});
+
+describe('App – Responsive layout (Story 4.3)', () => {
+	it('outer container prevents horizontal overflow', () => {
+		const queryClient = createTestQueryClient();
+		const { container } = render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+		const outerDiv = container.firstElementChild;
+		expect(outerDiv).toBeInTheDocument();
+		expect(outerDiv!.className).toContain('overflow-x-hidden');
+	});
+
+	it('main container has mobile-first responsive padding classes', () => {
+		const queryClient = createTestQueryClient();
+		const { container } = render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
+		const main = container.querySelector('main');
+		expect(main).toBeInTheDocument();
+		expect(main!.className).toContain('px-[var(--space-4)]');
+		expect(main!.className).toContain('md:px-[var(--space-5)]');
+		expect(main!.className).toContain('lg:px-[var(--space-6)]');
+		expect(main!.className).toContain('max-w-[40rem]');
+		expect(main!.className).toContain('mx-auto');
+	});
+});
+
+describe('App – Responsive autofocus (Story 4.3)', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('auto-focuses input on desktop (≥1024px)', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(JSON.stringify([]), {
+							status: 200,
+							headers: { 'Content-Type': 'application/json' },
+						}),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const originalMatchMedia = window.matchMedia;
+		vi.stubGlobal(
+			'matchMedia',
+			vi.fn((query: string) => {
+				if (query === '(min-width: 1024px)') {
+					return {
+						matches: true,
+						media: query,
+						addEventListener: vi.fn(),
+						removeEventListener: vi.fn(),
+						addListener: vi.fn(),
+						removeListener: vi.fn(),
+						onchange: null,
+						dispatchEvent: vi.fn(),
+					};
+				}
+				return originalMatchMedia(query);
+			}),
+		);
+
+		renderApp();
+
+		await waitFor(() => {
+			expect(screen.getByPlaceholderText(/add a new task/i)).toHaveFocus();
+		});
+	});
+
+	it('does NOT auto-focus input on mobile (<1024px)', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((input: RequestInfo, init?: RequestInit) => {
+				const url = typeof input === 'string' ? input : input.url;
+				if (url.includes('/api/todos') && (!init?.method || init.method === 'GET')) {
+					return Promise.resolve(
+						new Response(JSON.stringify([]), {
+							status: 200,
+							headers: { 'Content-Type': 'application/json' },
+						}),
+					);
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			}),
+		);
+
+		const originalMatchMedia = window.matchMedia;
+		vi.stubGlobal(
+			'matchMedia',
+			vi.fn((query: string) => {
+				if (query === '(min-width: 1024px)') {
+					return {
+						matches: false,
+						media: query,
+						addEventListener: vi.fn(),
+						removeEventListener: vi.fn(),
+						addListener: vi.fn(),
+						removeListener: vi.fn(),
+						onchange: null,
+						dispatchEvent: vi.fn(),
+					};
+				}
+				return originalMatchMedia(query);
+			}),
+		);
+
+		renderApp();
+
+		await waitFor(() => {
+			expect(screen.getByPlaceholderText(/add a new task/i)).toBeInTheDocument();
+		});
+		expect(screen.getByPlaceholderText(/add a new task/i)).not.toHaveFocus();
 	});
 });
 

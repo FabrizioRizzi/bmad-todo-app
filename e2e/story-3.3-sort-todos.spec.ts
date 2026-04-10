@@ -30,7 +30,7 @@ async function todoDescriptionsInOrder(page: import('@playwright/test').Page): P
 	const out: string[] = [];
 	for (let i = 0; i < count; i++) {
 		const aria = await checkboxes.nth(i).getAttribute('aria-label');
-		const m = aria?.match(/^Toggle completion for: (.+)$/);
+		const m = aria?.match(/^Mark (.+) as (?:complete|active)$/);
 		if (m) out.push(m[1]);
 	}
 	return out;
@@ -42,8 +42,14 @@ function orderSubset(fullOrder: string[], subset: readonly string[]): string[] {
 	return fullOrder.filter((d) => set.has(d));
 }
 
+function escapeRegExp(value: string) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function todoCheckbox(page: import('@playwright/test').Page, description: string) {
-	return page.locator(`input[type="checkbox"][aria-label="Toggle completion for: ${description}"]`);
+	return page.getByRole('checkbox', {
+		name: new RegExp(`^Mark ${escapeRegExp(description)} as (?:complete|active)$`),
+	});
 }
 
 test.describe('Story 3.3 - Sort Todos', () => {

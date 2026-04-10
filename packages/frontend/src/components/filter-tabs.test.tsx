@@ -102,6 +102,14 @@ describe('FilterTabs', () => {
 		expect(onFilterChange).toHaveBeenCalledWith('completed');
 	});
 
+	it('filter tabs have min-h-[44px] for touch targets', () => {
+		render(<FilterTabs activeFilter="all" counts={defaultCounts} onFilterChange={vi.fn()} />);
+		const tabs = screen.getAllByRole('tab');
+		for (const tab of tabs) {
+			expect(tab.className).toContain('min-h-[44px]');
+		}
+	});
+
 	it('wraps focus from last tab to first with ArrowRight', async () => {
 		const user = userEvent.setup();
 		render(<FilterTabs activeFilter="completed" counts={defaultCounts} onFilterChange={vi.fn()} />);

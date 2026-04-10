@@ -13,7 +13,7 @@ type SortRowProps = {
 };
 
 const btnBase =
-	'rounded-[var(--radius-sm)] border-none px-[var(--space-2)] py-[var(--space-2)] text-[length:var(--text-sm)] leading-[var(--text-sm-leading)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]';
+	'rounded-[var(--radius-sm)] border-none min-h-[44px] min-w-[44px] px-[var(--space-2)] py-[var(--space-2)] text-[length:var(--text-sm)] leading-[var(--text-sm-leading)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]';
 
 function dueButtonLabel(activeSort: TodoSort, dueDirection: DueSortDirection) {
 	if (activeSort !== 'due') return 'Due ↕';

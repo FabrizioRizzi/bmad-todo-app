@@ -22,6 +22,9 @@ type TodoCardProps = {
 	isFilterEntering?: boolean;
 };
 
+const truncateForAria = (text: string, max = 120): string =>
+	text.length > max ? `${text.slice(0, max - 1).trimEnd()}...` : text;
+
 export function TodoCard({
 	todo,
 	highlighted = false,
@@ -52,6 +55,7 @@ export function TodoCard({
 	const dueControlLabel = todo.dueDate
 		? `Change due date for ${todo.description}`
 		: `Set due date for ${todo.description}`;
+	const deleteControlLabel = `Delete: ${truncateForAria(todo.description)}`;
 
 	const handleToggle = async (e: ChangeEvent<HTMLInputElement>) => {
 		try {
@@ -84,7 +88,7 @@ export function TodoCard({
 	);
 
 	const barClassName = cn(
-		'group todo-card-bar rounded-[var(--radius)] border border-[color:var(--border)] border-l-[3px] border-l-[color:var(--active-bar)] bg-[color:var(--active-bg)] py-[length:var(--card-padding-y-mobile)] px-[length:var(--card-padding-x-mobile)] sm:py-[length:var(--card-padding-y-desktop)] sm:px-[length:var(--card-padding-x-desktop)]',
+		'group todo-card-bar rounded-[var(--radius)] border border-[color:var(--border)] border-l-[3px] border-l-[color:var(--active-bar)] bg-[color:var(--active-bg)] py-[length:var(--card-padding-y-mobile)] px-[length:var(--card-padding-x-mobile)] shadow-[var(--shadow-soft)] transition-shadow sm:py-[length:var(--card-padding-y-desktop)] sm:px-[length:var(--card-padding-x-desktop)] lg:hover:shadow-[var(--shadow-elevated)]',
 		todo.isCompleted && 'todo-card-completed',
 		overdue && !todo.isCompleted && 'todo-card-overdue',
 	);
@@ -101,7 +105,11 @@ export function TodoCard({
 								onChange={handleToggle}
 								disabled={isPending}
 								aria-busy={isPending || undefined}
-								aria-label={`Toggle completion for: ${todo.description}`}
+								aria-label={
+									todo.isCompleted
+										? `Mark ${todo.description} as active`
+										: `Mark ${todo.description} as complete`
+								}
 								className="peer h-6 w-6 cursor-pointer appearance-none rounded border border-[color:var(--border)] transition-all duration-[var(--duration-normal)] ease-[var(--ease-standard)] checked:border-[color:var(--success)] checked:bg-[color:var(--success)]"
 							/>
 							{todo.isCompleted && (
@@ -113,7 +121,7 @@ export function TodoCard({
 									strokeWidth="2"
 									viewBox="0 0 24 24"
 									stroke="currentColor"
-									aria-label="Completed"
+									aria-hidden="true"
 								>
 									<path d="M5 13l4 4L19 7"></path>
 								</svg>
@@ -131,7 +139,7 @@ export function TodoCard({
 											aria-expanded={duePopoverOpen}
 											className={cn(
 												buttonVariants({ variant: 'ghost', size: 'xs' }),
-												'h-auto min-h-0 justify-start p-0 font-medium text-[length:var(--text-due)] leading-[var(--text-due-leading)] text-[color:var(--text-secondary)] hover:bg-transparent hover:text-[color:var(--text-primary)]',
+												'h-auto min-h-[44px] min-w-[44px] justify-start px-[var(--space-1)] py-[var(--space-2)] font-medium text-[length:var(--text-due)] leading-[var(--text-due-leading)] text-[color:var(--text-secondary)] hover:bg-transparent hover:text-[color:var(--text-primary)]',
 												overdue &&
 													!todo.isCompleted &&
 													'text-[color:var(--overdue)] hover:text-[color:var(--overdue)]',
@@ -147,7 +155,7 @@ export function TodoCard({
 											aria-expanded={duePopoverOpen}
 											className={cn(
 												buttonVariants({ variant: 'ghost', size: 'icon-xs' }),
-												'size-7 text-[length:var(--text-xs)] leading-[var(--text-xs-leading)] text-[color:var(--text-secondary)]',
+												'min-h-[44px] min-w-[44px] text-[length:var(--text-xs)] leading-[var(--text-xs-leading)] text-[color:var(--text-secondary)]',
 											)}
 											disabled={isPending}
 											type="button"
@@ -190,8 +198,8 @@ export function TodoCard({
 							<button
 								type="button"
 								onClick={() => onDelete(todo.id)}
-								aria-label={`Delete: ${todo.description}`}
-								className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-[color:var(--text-secondary)] transition-all duration-[var(--duration-fast)] hover:bg-[color:var(--error-bg)] hover:text-[color:var(--error)] opacity-50 lg:opacity-0 lg:group-hover:opacity-100"
+								aria-label={deleteControlLabel}
+								className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-[color:var(--text-secondary)] transition-all duration-[var(--duration-fast)] hover:bg-[color:var(--error-bg)] hover:text-[color:var(--error)] opacity-50 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100"
 							>
 								<svg
 									width="16"

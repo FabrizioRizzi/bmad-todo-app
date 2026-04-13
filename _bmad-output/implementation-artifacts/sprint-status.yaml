@@ -37,7 +37,7 @@
 generated: 2026-04-07
 last_updated: 2026-04-13
 project: bmad-todo-app
-# last_updated by: epic-4 retrospective → done
+# last_updated by: 5-1 code review → done
 project_key: NOKEY
 tracking_system: file-system
 story_location: "{project-root}/_bmad-output/implementation-artifacts"
@@ -75,8 +75,8 @@ development_status:
   epic-4-retrospective: done
 
   # Epic 5: Production Deployment
-  epic-5: backlog
-  5-1-dockerize-frontend-and-backend: backlog
-  5-2-docker-compose-and-data-persistence: backlog
-  5-3-end-to-end-test-suite: backlog
+  epic-5: in-progress
+  5-1-dockerize-frontend-and-backend: done
+  5-2-docker-compose-and-data-persistence: ready-for-dev
+  5-3-end-to-end-test-suite: ready-for-dev
   epic-5-retrospective: optional

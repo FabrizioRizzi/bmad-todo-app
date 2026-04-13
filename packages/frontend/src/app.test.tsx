@@ -1058,7 +1058,7 @@ describe('App – Responsive layout (Story 4.3)', () => {
 		);
 		const outerDiv = container.firstElementChild;
 		expect(outerDiv).toBeInTheDocument();
-		expect(outerDiv!.className).toContain('overflow-x-hidden');
+		expect(outerDiv?.className).toContain('overflow-x-hidden');
 	});
 
 	it('main container has mobile-first responsive padding classes', () => {
@@ -1070,11 +1070,11 @@ describe('App – Responsive layout (Story 4.3)', () => {
 		);
 		const main = container.querySelector('main');
 		expect(main).toBeInTheDocument();
-		expect(main!.className).toContain('px-[var(--space-4)]');
-		expect(main!.className).toContain('md:px-[var(--space-5)]');
-		expect(main!.className).toContain('lg:px-[var(--space-6)]');
-		expect(main!.className).toContain('max-w-[40rem]');
-		expect(main!.className).toContain('mx-auto');
+		expect(main?.className).toContain('px-[var(--space-4)]');
+		expect(main?.className).toContain('md:px-[var(--space-5)]');
+		expect(main?.className).toContain('lg:px-[var(--space-6)]');
+		expect(main?.className).toContain('max-w-[40rem]');
+		expect(main?.className).toContain('mx-auto');
 	});
 });
 

@@ -35,9 +35,9 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-07
-last_updated: 2026-04-10
+last_updated: 2026-04-13
 project: bmad-todo-app
-# last_updated by: code-review 4-3 → done
+# last_updated by: epic-4 retrospective → done
 project_key: NOKEY
 tracking_system: file-system
 story_location: "{project-root}/_bmad-output/implementation-artifacts"
@@ -67,12 +67,12 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: Polish, Accessibility & Responsive Design
-  epic-4: in-progress
+  epic-4: done
   4-1-keyboard-navigation-and-focus-management: done
   4-2-screen-reader-support-and-aria: done
   4-3-responsive-layout-and-touch-targets: done
-  4-4-animation-polish-and-reduced-motion: ready-for-dev
-  epic-4-retrospective: optional
+  4-4-animation-polish-and-reduced-motion: done
+  epic-4-retrospective: done
 
   # Epic 5: Production Deployment
   epic-5: backlog

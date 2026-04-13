@@ -88,7 +88,7 @@ export function TodoCard({
 	);
 
 	const barClassName = cn(
-		'group todo-card-bar rounded-[var(--radius)] border border-[color:var(--border)] border-l-[3px] border-l-[color:var(--active-bar)] bg-[color:var(--active-bg)] py-[length:var(--card-padding-y-mobile)] px-[length:var(--card-padding-x-mobile)] shadow-[var(--shadow-soft)] transition-shadow sm:py-[length:var(--card-padding-y-desktop)] sm:px-[length:var(--card-padding-x-desktop)] lg:hover:shadow-[var(--shadow-elevated)]',
+		'group todo-card-bar rounded-[var(--radius)] border border-[color:var(--border)] border-l-[3px] border-l-[color:var(--active-bar)] bg-[color:var(--active-bg)] py-[length:var(--card-padding-y-mobile)] px-[length:var(--card-padding-x-mobile)] shadow-[var(--shadow-soft)] transition-shadow duration-[var(--duration-fast)] ease-[var(--ease-standard)] sm:py-[length:var(--card-padding-y-desktop)] sm:px-[length:var(--card-padding-x-desktop)] lg:hover:shadow-[var(--shadow-elevated)]',
 		todo.isCompleted && 'todo-card-completed',
 		overdue && !todo.isCompleted && 'todo-card-overdue',
 	);

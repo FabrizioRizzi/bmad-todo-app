@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import type { Todo } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import type { EmptyStateVariant } from './empty-state';
@@ -57,6 +58,7 @@ export function TodoList({
 	onDueDateError,
 	onDueDateSuccess,
 }: TodoListProps) {
+	const reducedMotion = useReducedMotion();
 	const showSkeleton = isInitialLoading;
 	const showContent = !isInitialLoading;
 	const [filterExitingIds, setFilterExitingIds] = useState<Set<string>>(() => new Set());
@@ -102,12 +104,13 @@ export function TodoList({
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional; needed for FLIP animation timing on filter change
 	useEffect(() => {
+		const delay = reducedMotion ? 0 : 250;
 		const tid = window.setTimeout(() => {
 			setFilterExitingIds(new Set());
 			setFilterEnteringIds(new Set());
-		}, 250);
+		}, delay);
 		return () => window.clearTimeout(tid);
-	}, [filter]);
+	}, [filter, reducedMotion]);
 
 	const visibleTodos = todos.filter(
 		(todo) => todoMatchesFilter(todo, filter) || filterExitingIds.has(todo.id),
@@ -185,9 +188,9 @@ export function TodoList({
 		if (typeof window === 'undefined') return;
 		const ul = listRef.current;
 		if (!ul) return;
-
-		const reduceMotionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-		const reduceMotion = Boolean(reduceMotionQuery?.matches);
+		let cancelled = false;
+		const rafIds: number[] = [];
+		const teardownByElement = new Map<HTMLElement, () => void>();
 
 		const capturePositions = (): Map<string, Box> => {
 			const next = new Map<string, Box>();
@@ -207,7 +210,7 @@ export function TodoList({
 		const filterChanged = prevFilterFlipRef.current !== filter;
 		prevFilterFlipRef.current = filter;
 
-		if (reduceMotion) {
+		if (reducedMotion) {
 			prevFlipPositionsRef.current = newPositions;
 			prevSortLayoutKeyFlipRef.current = sortLayoutKey;
 			return;
@@ -258,23 +261,43 @@ export function TodoList({
 		void ul.offsetHeight;
 
 		for (const { el } of toAnimate) {
-			requestAnimationFrame(() => {
-				requestAnimationFrame(() => {
-					el.style.transition = 'transform var(--duration-smooth) ease-out';
+			const outerRafId = requestAnimationFrame(() => {
+				if (cancelled) return;
+				const innerRafId = requestAnimationFrame(() => {
+					if (cancelled) return;
+					el.style.transition = 'transform var(--duration-smooth) var(--ease-standard)';
 					el.style.transform = 'translate(0, 0)';
 					const onEnd = (e: TransitionEvent) => {
 						if (e.propertyName !== 'transform') return;
 						el.style.transition = '';
 						el.style.transform = '';
 						el.removeEventListener('transitionend', onEnd);
+						teardownByElement.delete(el);
 					};
 					el.addEventListener('transitionend', onEnd);
+					teardownByElement.set(el, () => {
+						el.removeEventListener('transitionend', onEnd);
+						el.style.transition = '';
+						el.style.transform = '';
+					});
 				});
+				rafIds.push(innerRafId);
 			});
+			rafIds.push(outerRafId);
 		}
 
 		prevFlipPositionsRef.current = newPositions;
-	}, [renderTodos, sortLayoutKey, filter]);
+
+		return () => {
+			cancelled = true;
+			for (const id of rafIds) {
+				window.cancelAnimationFrame(id);
+			}
+			for (const teardown of teardownByElement.values()) {
+				teardown();
+			}
+		};
+	}, [renderTodos, sortLayoutKey, filter, reducedMotion]);
 
 	const matchingCount = todos.filter((t) => todoMatchesFilter(t, filter)).length;
 	const showFilteredEmpty = matchingCount === 0 && filterExitingIds.size === 0 && filter !== 'all';

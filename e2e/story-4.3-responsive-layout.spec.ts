@@ -66,15 +66,15 @@ test.describe('Story 4.3 - Responsive layout & touch targets', () => {
 			const allTab = page.getByRole('tab', { name: /all,.*tasks/i });
 			const box = await allTab.boundingBox();
 			expect(box).toBeTruthy();
-			expect(box!.height).toBeGreaterThanOrEqual(44);
+			expect(box?.height).toBeGreaterThanOrEqual(44);
 		});
 
 		test('add button has adequate touch target size', async ({ page }) => {
 			const addBtn = page.getByRole('button', { name: /add task/i });
 			const box = await addBtn.boundingBox();
 			expect(box).toBeTruthy();
-			expect(box!.width).toBeGreaterThanOrEqual(44);
-			expect(box!.height).toBeGreaterThanOrEqual(44);
+			expect(box?.width).toBeGreaterThanOrEqual(44);
+			expect(box?.height).toBeGreaterThanOrEqual(44);
 		});
 
 		test('checkbox has adequate touch target size', async ({ page }) => {
@@ -87,8 +87,8 @@ test.describe('Story 4.3 - Responsive layout & touch targets', () => {
 			const wrapper = page.locator(`li:has-text("${todoText}") .relative`).first();
 			const box = await wrapper.boundingBox();
 			expect(box).toBeTruthy();
-			expect(box!.width).toBeGreaterThanOrEqual(44);
-			expect(box!.height).toBeGreaterThanOrEqual(44);
+			expect(box?.width).toBeGreaterThanOrEqual(44);
+			expect(box?.height).toBeGreaterThanOrEqual(44);
 		});
 
 		test('delete button has adequate touch target size', async ({ page }) => {
@@ -98,8 +98,8 @@ test.describe('Story 4.3 - Responsive layout & touch targets', () => {
 			const deleteBtn = page.locator(`button[aria-label="Delete: ${todoText}"]`);
 			const box = await deleteBtn.boundingBox();
 			expect(box).toBeTruthy();
-			expect(box!.width).toBeGreaterThanOrEqual(44);
-			expect(box!.height).toBeGreaterThanOrEqual(44);
+			expect(box?.width).toBeGreaterThanOrEqual(44);
+			expect(box?.height).toBeGreaterThanOrEqual(44);
 		});
 	});
 
@@ -115,7 +115,7 @@ test.describe('Story 4.3 - Responsive layout & touch targets', () => {
 			const main = page.locator('main');
 			const box = await main.boundingBox();
 			expect(box).toBeTruthy();
-			expect(box!.width).toBeLessThanOrEqual(640 + 64 + 2);
+			expect(box?.width).toBeLessThanOrEqual(640 + 64 + 2);
 		});
 
 		test('delete button is hidden until hover on desktop', async ({ page }) => {

@@ -7,6 +7,7 @@ config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) });
 const envSchema = z
 	.object({
 		DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+		DATABASE_URL_TEST: z.string().optional(),
 		PORT: z.coerce.number().default(3000),
 		NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 		ALLOWED_ORIGINS: z.string().optional(),

@@ -3,9 +3,16 @@
 	"private": true,
 	"packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
 	"scripts": {
-		"dev": "docker compose up -d db && pnpm --parallel -r run dev",
+		"compose": "docker compose",
+		"compose:up": "docker compose up --build",
+		"compose:down": "docker compose down",
+		"compose:dev:up": "docker compose --profile dev up -d db dev-db-access",
+		"compose:dev:down": "docker compose --profile dev down",
+		"compose:test:up": "docker compose --profile test up -d test-db",
+		"compose:test:down": "docker compose --profile test down",
+		"dev": "docker compose --profile dev up -d db dev-db-access && pnpm --parallel -r run dev",
 		"dev:app": "pnpm --parallel -r run dev",
-		"dev:down": "docker compose down",
+		"dev:down": "docker compose --profile dev down",
 		"build": "pnpm -r run build",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
@@ -24,9 +31,10 @@
 		]
 	},
 	"devDependencies": {
+		"@axe-core/playwright": "^4.11.1",
 		"@biomejs/biome": "^2.4.10",
-		"@types/node": "^25.5.2",
 		"@playwright/test": "^1.59.1",
+		"@types/node": "^25.5.2",
 		"simple-git-hooks": "^2.13.1",
 		"vitest": "^4.1.3"
 	}

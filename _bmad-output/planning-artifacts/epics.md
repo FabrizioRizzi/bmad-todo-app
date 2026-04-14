@@ -969,6 +969,37 @@ So that I can deploy and demonstrate the complete working product.
 **When** tests/verification is run
 **Then** `docker compose build` succeeds, `docker compose up` starts all three services, the frontend loads, API responds, and data persists across restart cycles
 
+### Story 5.4: Environment Config
+
+As a developer,
+I want dev and test environments supported through environment variables and Docker Compose profiles,
+So that I can run isolated environments for development and testing without conflicting with the production-like deployment.
+
+**Acceptance Criteria:**
+
+**Given** the `docker-compose.yml` configuration
+**When** Compose profiles are defined
+**Then** a `dev` profile exists that enables hot-reload, debug ports, and development-friendly defaults
+**And** a `test` profile exists that spins up an isolated test database and configures the backend for test mode
+**And** running `docker compose up` without a profile starts the production-like stack (current behavior preserved)
+
+**Given** the `dev` profile is activated
+**When** I run `docker compose --profile dev up`
+**Then** the backend uses `NODE_ENV=development` with source-mounted volumes for hot reload
+**And** the database port (5432) is exposed to the host for direct access
+**And** CORS is permissive for local frontend dev server origins
+
+**Given** the `test` profile is activated
+**When** I run `docker compose --profile test up`
+**Then** a separate `test-db` service starts with an isolated database (`bmad_todo_test`)
+**And** the backend uses `NODE_ENV=test` and connects to the test database
+**And** the test database uses a separate volume (not `pgdata`) so production data is never affected
+
+**Given** environment variable files
+**When** the configuration is reviewed
+**Then** `.env.example` documents all profile-specific variables with clear section headers
+**And** `NODE_ENV` drives behavioral switching in the backend (development, test, production)
+
 ### Story 5.3: End-to-End Test Suite
 
 As a user,

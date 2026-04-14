@@ -14,7 +14,9 @@ declare module 'fastify' {
 
 export default fp(
 	async (fastify: FastifyInstance) => {
-		const client = postgres(env.DATABASE_URL);
+		const databaseUrl =
+			env.NODE_ENV === 'test' ? (env.DATABASE_URL_TEST ?? env.DATABASE_URL) : env.DATABASE_URL;
+		const client = postgres(databaseUrl);
 		const db = drizzle(client, { schema });
 
 		fastify.decorate('db', db);

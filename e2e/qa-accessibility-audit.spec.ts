@@ -61,10 +61,7 @@ test.describe('WCAG AA Accessibility Audit', () => {
 				.analyze();
 
 			logViolations(results.violations, `Filter: ${filter}`);
-			expect(
-				results.violations,
-				`Violations found in ${filter} filter view`,
-			).toEqual([]);
+			expect(results.violations, `Violations found in ${filter} filter view`).toEqual([]);
 		}
 	});
 
@@ -90,10 +87,7 @@ test.describe('WCAG AA Accessibility Audit', () => {
 	});
 });
 
-function logViolations(
-	violations: import('axe-core').Result[],
-	context = '',
-) {
+function logViolations(violations: import('axe-core').Result[], context = '') {
 	if (violations.length === 0) return;
 	const prefix = context ? `[${context}] ` : '';
 	console.log(`\n${prefix}${violations.length} accessibility violation(s):\n`);

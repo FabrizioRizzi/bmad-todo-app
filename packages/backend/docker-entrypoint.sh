@@ -20,6 +20,22 @@ read_secret_or_env() {
   printf "%s" "$secret_value"
 }
 
+detect_dev_profile() {
+  node -e "require('node:dns').lookup('dev-db-access', (err) => process.exit(err ? 1 : 0))"
+}
+
+if [ "${NODE_ENV:-production}" = "production" ]; then
+  attempt=0
+  while [ "$attempt" -lt 3 ]; do
+    if detect_dev_profile; then
+      export NODE_ENV=development
+      break
+    fi
+    attempt=$((attempt + 1))
+    sleep 1
+  done
+fi
+
 DB_HOST="${DB_HOST:-db}"
 DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-bmad_todo}"

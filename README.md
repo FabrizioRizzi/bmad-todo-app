@@ -85,7 +85,7 @@ pnpm dev
 ```
 
 This single command:
-1. Starts PostgreSQL via Docker Compose
+1. Starts PostgreSQL via Docker Compose (with the `dev` profile, exposing port 5432 via a socat sidecar)
 2. Launches the backend API on `http://localhost:3000` (with auto-reload)
 3. Launches the frontend on `http://localhost:5173` (with HMR)
 
@@ -101,15 +101,38 @@ pnpm db:seed:demo
 
 | Script | Description |
 |--------|-------------|
-| `pnpm dev` | Start DB container + all dev servers |
+| `pnpm compose -- <docker compose args>` | Run Docker Compose from the repo root |
+| `pnpm compose:up` | Start the default production-like Compose stack |
+| `pnpm compose:down` | Stop the default Compose stack |
+| `pnpm compose:dev:up` | Start the dev profile database + port-forward sidecar |
+| `pnpm compose:dev:down` | Stop Compose services started with the dev profile |
+| `pnpm compose:test:up` | Start the isolated test database profile |
+| `pnpm compose:test:down` | Stop Compose services started with the test profile |
+| `pnpm dev` | Start DB + dev profile sidecar + all dev servers |
 | `pnpm dev:app` | Start dev servers only (DB already running) |
-| `pnpm dev:down` | Stop Docker containers |
+| `pnpm dev:down` | Stop Docker containers (including dev profile) |
 | `pnpm build` | Build all packages for production |
 | `pnpm lint` | Run Biome linter and formatter checks |
 | `pnpm lint:fix` | Auto-fix lint and format issues |
 | `pnpm test` | Run unit/integration tests across all packages |
 | `pnpm test:e2e` | Run Playwright end-to-end tests |
 | `pnpm db:seed:demo` | Seed the database with sample todos |
+
+## Docker Compose Profiles
+
+The project uses Docker Compose profiles to isolate development, testing, and production concerns.
+
+You can also run Compose through the root scripts, for example `pnpm compose:up`, `pnpm compose:dev:up`, or `pnpm compose -- ps`.
+
+| Profile | Command | What it starts |
+|---------|---------|----------------|
+| _(none)_ | `docker compose up --build` | Production stack: `db`, `backend`, `frontend` |
+| `dev` | `docker compose --profile dev up -d db dev-db-access` | DB + socat sidecar exposing port 5432 to the host |
+| `test` | `docker compose --profile test up -d test-db` | Isolated test DB on port 5433 (`bmad_todo_test`) |
+
+- **Production** — `docker compose up` starts only the default services. The database has no host-exposed port; the backend connects over the internal Docker network.
+- **Dev** — The `dev-db-access` sidecar (alpine/socat) forwards host port 5432 to the internal `db` service so local tooling and the backend dev server can connect. `pnpm dev` activates this profile automatically.
+- **Test** — A separate `test-db` service runs `postgres:16-alpine` with simple credentials (`postgres`/`postgres`), database `bmad_todo_test`, an isolated `pgdata_test` volume, and host port 5433.
 
 ## Docker Deployment
 
@@ -132,6 +155,7 @@ Set these in `.env` or your shell environment:
 | `POSTGRES_DB` | `bmad_todo` | Database name |
 | `FRONTEND_PORT` | `8080` | Host port for the frontend |
 | `ALLOWED_ORIGINS` | — | Comma-separated browser origins (required in production) |
+| `DATABASE_URL_TEST` | — | Connection string for the test profile DB (optional) |
 
 ### 3. Launch
 
@@ -154,7 +178,7 @@ The backend exposes a REST API with auto-generated Swagger documentation at `/do
 
 ## Testing
 
-**Unit & integration tests** run with Vitest across both packages:
+**Unit & integration tests** run with Vitest across both packages (backend integration tests use the isolated test database on port 5433 by default):
 
 ```bash
 pnpm test
@@ -164,6 +188,14 @@ pnpm test
 
 ```bash
 pnpm test:e2e
+```
+
+**Test database** — To spin up an isolated test database for integration tests without touching dev data:
+
+```bash
+docker compose --profile test up -d test-db
+pnpm --filter backend test
+# Connect: psql -h localhost -p 5433 -U postgres -d bmad_todo_test
 ```
 
 The test suite covers CRUD operations, filtering, sorting, due dates, error states, accessibility, and responsive behavior.

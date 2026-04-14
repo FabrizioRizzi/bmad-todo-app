@@ -52,6 +52,33 @@ services:
     expose:
       - "3000"
 
+  dev-db-access:
+    image: alpine/socat:latest
+    profiles: [dev]
+    depends_on:
+      db:
+        condition: service_healthy
+    command: "tcp-listen:5432,fork,reuseaddr tcp-connect:db:5432"
+    ports:
+      - "5432:5432"
+
+  test-db:
+    image: postgres:16-alpine
+    profiles: [test]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bmad_todo_test
+    volumes:
+      - pgdata_test:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bmad_todo_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   frontend:
     build:
       context: .
@@ -65,6 +92,7 @@ services:
 
 volumes:
   pgdata:
+  pgdata_test:
 
 secrets:
   postgres_user:

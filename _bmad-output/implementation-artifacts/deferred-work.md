@@ -43,3 +43,7 @@
 
 - Post-delete focus restore uses `document.querySelector` on `li[data-todo-id]` — couples `App` to list item markup; consider a list-level focus API later (acceptable tradeoff for Story 4.1 scope).
 - Undo toast registers `keydown` on `document` in capture phase — if toast and another overlay (e.g. due date popover) are both open, Escape ordering may surprise users; revisit with a global stacking/focus policy if reported.
+
+## Deferred from: code review of 5-2-docker-compose-and-data-persistence.md (2026-04-14)
+
+- Existing `pgdata` volume lifecycle behavior: changing `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` after initialization does not rebootstrap persisted Postgres data. This can cause auth/database mismatch on restart. Deferred as expected Postgres + named-volume behavior.

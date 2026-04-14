@@ -33,8 +33,10 @@ COPY --from=prod-deps /app/packages/backend/node_modules/ packages/backend/node_
 COPY --from=build /app/packages/backend/dist/ packages/backend/dist/
 COPY packages/backend/drizzle.config.ts packages/backend/
 COPY packages/backend/src/schema/migrations/ packages/backend/src/schema/migrations/
+COPY packages/backend/docker-entrypoint.sh packages/backend/
+RUN chmod +x packages/backend/docker-entrypoint.sh
 
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["node", "packages/backend/dist/server.js"]
+ENTRYPOINT ["packages/backend/docker-entrypoint.sh"]

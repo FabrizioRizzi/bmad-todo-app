@@ -247,7 +247,7 @@ pnpm add -Dw @biomejs/biome typescript
 |---|---|---|
 | Frontend serving (Docker) | Nginx (nginx:alpine) | ~7MB image, fast static serving, gzip, caching headers. Can proxy /api/* to backend. Standard. |
 | Database persistence | Named Docker volume | Survives container restarts and rebuilds. Cleaner and more portable than bind mounts. |
-| Environment config | `.env` file + `.env.example` | Docker Compose reads via `env_file`. Fastify validates required vars on startup with Zod schema. Secrets out of compose file. |
+| Environment config | `.env` + Docker secrets files + `.env.example` | `.env` stores non-secret config, while Docker Compose credentials are mounted from local secrets files (`secrets/postgres_user.txt`, `secrets/postgres_password.txt`). Fastify still validates required runtime vars on startup with Zod schema. |
 | Dev database | Docker container | `docker run postgres` for development. Consistent, isolated, no system-level install required. Documented in README. |
 | Logging | Pino (Fastify built-in) | Structured JSON logging out of the box. No extra dependency. Monitoring deferred to Phase 2. |
 | CI/CD | Deferred | V1 is local demo. GitHub Actions can be added when deployment target is decided. |
@@ -507,6 +507,8 @@ bmad-todo-app/
 ├── .gitignore
 ├── biome.json                      # Shared Biome config (lint + format)
 ├── docker-compose.yml              # 3-service deployment (nginx, api, postgres)
+├── secrets/
+│   └── README.md                   # Instructions for local Docker secret files
 ├── package.json                    # Root workspace scripts (dev, build, test, lint)
 ├── pnpm-lock.yaml
 ├── pnpm-workspace.yaml             # packages: ['packages/*']
@@ -673,8 +675,9 @@ User interaction
 
 **Deployment (Docker Compose):**
 - Frontend: multi-stage build → nginx:alpine serving static files, proxying `/api/*`
-- Backend: multi-stage build → node:alpine running compiled Fastify server
+- Backend: multi-stage build → node:alpine running compiled Fastify server with startup migration entrypoint
 - Database: postgres:16-alpine with named volume for persistence
+- Credentials: mounted from Docker secrets (`secrets/postgres_user.txt`, `secrets/postgres_password.txt`)
 - Single `docker compose up` starts all three services
 
 ## Architecture Validation Results

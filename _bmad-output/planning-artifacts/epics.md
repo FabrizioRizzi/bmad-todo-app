@@ -91,7 +91,7 @@ This document provides the complete epic and story breakdown for bmad-todo-app, 
 - Playwright for end-to-end tests at workspace root
 - QA infrastructure set up as part of initial scaffold (Day One)
 - Docker deployment: Nginx (nginx:alpine) for frontend static serving + API proxy, Node (node:alpine) for backend, PostgreSQL (postgres:16-alpine) with named volume
-- `.env` file for environment configuration with `.env.example` template; Fastify validates required vars on startup with Zod
+- `.env` file for non-secret environment configuration with `.env.example` template; Docker Compose credentials are provided via local Docker secrets files (`secrets/postgres_user.txt`, `secrets/postgres_password.txt`)
 - Co-located test files (`{source-file}.test.{ext}`), kebab-case file names, flat `components/` directory
 - Native fetch wrapped in typed `api.ts` module — no separate HTTP library
 - No client-side router (single-view app)
@@ -939,12 +939,13 @@ So that I can deploy and demonstrate the complete working product.
 **When** the database service is defined
 **Then** it uses `postgres:16-alpine` image
 **And** a named Docker volume is configured for PostgreSQL data persistence
-**And** database credentials are read from the `.env` file (not hardcoded in `docker-compose.yml`)
+**And** database credentials are read from Docker secrets files (`secrets/postgres_user.txt`, `secrets/postgres_password.txt`) mounted in containers (not hardcoded in `docker-compose.yml`)
 
 **Given** the `.env.example` file
 **When** copied to `.env` and populated
-**Then** it contains all required environment variables: `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `PORT` (backend), and any other service configuration
+**Then** it contains all required non-secret environment variables: local `DATABASE_URL`, `POSTGRES_DB`, `PORT` (backend), `FRONTEND_PORT`, `NODE_ENV`, `ALLOWED_ORIGINS`
 **And** the `.env` file is listed in `.gitignore`
+**And** the `secrets/README.md` documents how to create local secret files for Docker Compose
 
 **Given** the application is running via Docker Compose
 **When** I create, complete, and delete todos through the frontend
@@ -956,7 +957,7 @@ So that I can deploy and demonstrate the complete working product.
 **And** no data is lost across container restarts
 
 **Given** a fresh clone of the repository
-**When** a developer runs `cp .env.example .env` and `docker compose up --build`
+**When** a developer runs `cp .env.example .env`, creates `secrets/postgres_user.txt` and `secrets/postgres_password.txt`, and runs `docker compose up --build`
 **Then** the entire application builds and starts successfully from a single command
 **And** the app is fully functional on the configured port
 

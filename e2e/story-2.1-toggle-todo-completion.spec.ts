@@ -1,10 +1,18 @@
 import { expect, test } from '@playwright/test';
 
+import { TodoTracker } from './fixtures/test-cleanup';
+
+const tracker = new TodoTracker();
+
 test.describe('Story 2.1 - Toggle Todo Completion', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
 		await page.waitForLoadState('domcontentloaded');
 		await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
+	});
+
+	test.afterEach(async ({ request }) => {
+		await tracker.cleanup(request);
 	});
 
 	function escapeRegExp(value: string) {
@@ -24,12 +32,17 @@ test.describe('Story 2.1 - Toggle Todo Completion', () => {
 			.locator('xpath=ancestor::div[contains(@class,"todo-card-bar")]');
 	}
 
-	test('displays checkbox on todo items', async ({ page }) => {
+	async function createTodo(page: import('@playwright/test').Page, text: string) {
 		const input = page.locator('[placeholder="Add a new task..."]');
-		const todoText = `Checkbox ${Date.now()}`;
-		await input.fill(todoText);
+		await input.fill(text);
 		await input.press('Enter');
-		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		await page.locator(`text=${text}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		tracker.track(text);
+	}
+
+	test('displays checkbox on todo items', async ({ page }) => {
+		const todoText = `Checkbox ${Date.now()}`;
+		await createTodo(page, todoText);
 
 		const checkbox = todoCheckbox(page, todoText);
 		await expect(checkbox).toBeVisible();
@@ -37,11 +50,8 @@ test.describe('Story 2.1 - Toggle Todo Completion', () => {
 	});
 
 	test('toggles todo completion active to completed', async ({ page }) => {
-		const input = page.locator('[placeholder="Add a new task..."]');
 		const todoText = `Todo ${Date.now()}`;
-		await input.fill(todoText);
-		await input.press('Enter');
-		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		await createTodo(page, todoText);
 
 		const checkbox = todoCheckbox(page, todoText);
 		await expect(checkbox).not.toBeChecked();
@@ -52,11 +62,8 @@ test.describe('Story 2.1 - Toggle Todo Completion', () => {
 	});
 
 	test('toggles todo completion completed to active', async ({ page }) => {
-		const input = page.locator('[placeholder="Add a new task..."]');
 		const todoText = `Revert ${Date.now()}`;
-		await input.fill(todoText);
-		await input.press('Enter');
-		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		await createTodo(page, todoText);
 
 		const checkbox = todoCheckbox(page, todoText);
 		await checkbox.click();
@@ -68,11 +75,8 @@ test.describe('Story 2.1 - Toggle Todo Completion', () => {
 	});
 
 	test('shows error message when toggle API fails', async ({ page }) => {
-		const input = page.locator('[placeholder="Add a new task..."]');
 		const todoText = `API Error ${Date.now()}`;
-		await input.fill(todoText);
-		await input.press('Enter');
-		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		await createTodo(page, todoText);
 
 		await page.route('**/api/todos/**', (route) => {
 			if (route.request().method() === 'PATCH') {
@@ -90,11 +94,8 @@ test.describe('Story 2.1 - Toggle Todo Completion', () => {
 	});
 
 	test('reverts optimistic update on error', async ({ page }) => {
-		const input = page.locator('[placeholder="Add a new task..."]');
 		const todoText = `Revert err ${Date.now()}`;
-		await input.fill(todoText);
-		await input.press('Enter');
-		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		await createTodo(page, todoText);
 
 		await page.route('**/api/todos/**', (route) => {
 			if (route.request().method() === 'PATCH') {
@@ -116,19 +117,13 @@ test.describe('Story 2.1 - Toggle Todo Completion', () => {
 	});
 
 	test('multiple todos toggle independently', async ({ page }) => {
-		const input = page.locator('[placeholder="Add a new task..."]');
-
 		const todo1 = `Indep A ${Date.now()}`;
-		await input.fill(todo1);
-		await input.press('Enter');
-		await page.locator(`text=${todo1}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		await createTodo(page, todo1);
 
 		await page.waitForTimeout(200);
 
 		const todo2 = `Indep B ${Date.now()}`;
-		await input.fill(todo2);
-		await input.press('Enter');
-		await page.locator(`text=${todo2}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		await createTodo(page, todo2);
 
 		const cb1 = todoCheckbox(page, todo1);
 		const cb2 = todoCheckbox(page, todo2);
@@ -139,11 +134,8 @@ test.describe('Story 2.1 - Toggle Todo Completion', () => {
 	});
 
 	test('checkbox has accessibility attributes', async ({ page }) => {
-		const input = page.locator('[placeholder="Add a new task..."]');
 		const todoText = `Accessibility ${Date.now()}`;
-		await input.fill(todoText);
-		await input.press('Enter');
-		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		await createTodo(page, todoText);
 
 		const checkbox = todoCheckbox(page, todoText);
 		await expect(checkbox).toHaveAttribute('aria-label', `Mark ${todoText} as complete`);

@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 
+import { TodoTracker } from './fixtures/test-cleanup';
+
 const API_BASE = 'http://localhost:3000';
+const tracker = new TodoTracker();
 
 function localIsoDate(d: Date): string {
 	const y = d.getFullYear();
@@ -9,12 +12,6 @@ function localIsoDate(d: Date): string {
 	return `${y}-${m}-${day}`;
 }
 
-/**
- * Two upcoming ISO dates so an active todo shows distinct `formatDueDate` badges (never "Overdue").
- * Picking fixed calendar days in the *current* month fails late in the month when both dates are
- * already past. Offsetting from **today** keeps the days in the near future and usually on the
- * default calendar view (same month or adjacent outside days).
- */
 function twoUpcomingDueDates(): { first: string; second: string } {
 	const a = new Date();
 	a.setDate(a.getDate() + 3);
@@ -31,7 +28,6 @@ function todoCardBar(page: import('@playwright/test').Page, description: string)
 }
 
 function addInputDueDateButton(page: import('@playwright/test').Page) {
-	// Substring match would also hit "Set due date for …" on cards; use exact label from AddInput.
 	return page.getByRole('button', { name: 'Set due date', exact: true });
 }
 
@@ -48,6 +44,10 @@ test.describe('Story 3.1 - Due date support', () => {
 		await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
 	});
 
+	test.afterEach(async ({ request }) => {
+		await tracker.cleanup(request);
+	});
+
 	test('opens AddInput date picker, creates todo with Today badge, resets calendar control', async ({
 		page,
 	}) => {
@@ -61,6 +61,7 @@ test.describe('Story 3.1 - Due date support', () => {
 		const input = page.locator('[placeholder="Add a new task..."]');
 		await input.fill(todoText);
 		await input.press('Enter');
+		tracker.track(todoText);
 
 		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
@@ -79,6 +80,7 @@ test.describe('Story 3.1 - Due date support', () => {
 		const input = page.locator('[placeholder="Add a new task..."]');
 		await input.fill(todoText);
 		await input.press('Enter');
+		tracker.track(todoText);
 		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
 		const bar = todoCardBar(page, todoText);
@@ -98,6 +100,7 @@ test.describe('Story 3.1 - Due date support', () => {
 		const input = page.locator('[placeholder="Add a new task..."]');
 		await input.fill(todoText);
 		await input.press('Enter');
+		tracker.track(todoText);
 		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
 		const changeBtn = todoCardBar(page, todoText).getByRole('button', {
@@ -122,6 +125,7 @@ test.describe('Story 3.1 - Due date support', () => {
 		const input = page.locator('[placeholder="Add a new task..."]');
 		await input.fill(todoText);
 		await input.press('Enter');
+		tracker.track(todoText);
 		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
 		await todoCardBar(page, todoText)
@@ -140,6 +144,7 @@ test.describe('Story 3.1 - Due date support', () => {
 			data: { description: todoText, dueDate: '2020-06-01' },
 		});
 		expect(res.ok()).toBeTruthy();
+		tracker.track(todoText);
 
 		await page.reload();
 		await page.waitForLoadState('domcontentloaded');
@@ -158,6 +163,7 @@ test.describe('Story 3.1 - Due date support', () => {
 			data: { description: todoText, dueDate: '2020-06-01' },
 		});
 		expect(createRes.ok()).toBeTruthy();
+		tracker.track(todoText);
 		const created = (await createRes.json()) as { id: string };
 
 		const patchRes = await request.patch(`${API_BASE}/api/todos/${created.id}`, {
@@ -185,6 +191,7 @@ test.describe('Story 3.1 - Due date support', () => {
 		const input = page.locator('[placeholder="Add a new task..."]');
 		await input.fill(todoText);
 		await input.press('Enter');
+		tracker.track(todoText);
 		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
 		await page.route('**/api/todos/**', (route) => {

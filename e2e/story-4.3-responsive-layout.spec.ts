@@ -1,8 +1,12 @@
 import { expect, test } from '@playwright/test';
 
+import { TodoTracker } from './fixtures/test-cleanup';
+
 function escapeForRegex(text: string): string {
 	return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+const tracker = new TodoTracker();
 
 test.describe('Story 4.3 - Responsive layout & touch targets', () => {
 	test.beforeEach(async ({ page }) => {
@@ -11,11 +15,16 @@ test.describe('Story 4.3 - Responsive layout & touch targets', () => {
 		await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
 	});
 
+	test.afterEach(async ({ request }) => {
+		await tracker.cleanup(request);
+	});
+
 	async function createTodo(page: import('@playwright/test').Page, text: string) {
 		const input = page.locator('[placeholder="Add a new task..."]');
 		await input.fill(text);
 		await input.press('Enter');
 		await page.locator(`text=${text}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		tracker.track(text);
 	}
 
 	test.describe('Mobile viewport (320×568)', () => {
@@ -37,7 +46,7 @@ test.describe('Story 4.3 - Responsive layout & touch targets', () => {
 		});
 
 		test('no horizontal scroll with long todo description at 320px', async ({ page }) => {
-			const longText = 'A'.repeat(200);
+			const longText = `${'A'.repeat(200)} ${Date.now()}`;
 			await createTodo(page, longText);
 
 			const overflow = await page.evaluate(() => ({
@@ -166,7 +175,8 @@ test.describe('Story 4.3 - Responsive layout & touch targets', () => {
 
 			for (const viewport of viewports) {
 				await page.setViewportSize(viewport);
-				await createTodo(page, `Column ${viewport.width} ${Date.now()}`);
+				const todoText = `Column ${viewport.width} ${Date.now()}`;
+				await createTodo(page, todoText);
 
 				const main = page.locator('main');
 				const display = await main.evaluate((el) => getComputedStyle(el).display);

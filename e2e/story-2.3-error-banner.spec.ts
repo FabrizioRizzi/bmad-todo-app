@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 
+import { TodoTracker } from './fixtures/test-cleanup';
+
 const AUTO_DISMISS_MS = 8000;
+const tracker = new TodoTracker();
 
 test.describe('Story 2.3 - Error Banner Component', () => {
 	function escapeRegExp(value: string) {
@@ -19,11 +22,16 @@ test.describe('Story 2.3 - Error Banner Component', () => {
 		await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
 	});
 
+	test.afterEach(async ({ request }) => {
+		await tracker.cleanup(request);
+	});
+
 	async function createTodo(page: import('@playwright/test').Page, text: string) {
 		const input = page.locator('[placeholder="Add a new task..."]');
 		await input.fill(text);
 		await input.press('Enter');
 		await page.locator(`text=${text}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		tracker.track(text);
 	}
 
 	function errorBanner(page: import('@playwright/test').Page) {
@@ -106,7 +114,6 @@ test.describe('Story 2.3 - Error Banner Component', () => {
 		const deleteBtn = page.locator(`button[aria-label="Delete: ${todoText}"]`);
 		await deleteBtn.click({ force: true });
 
-		// Wait for undo timer to expire so DELETE is actually sent
 		await page.waitForTimeout(6000);
 
 		const banner = errorBanner(page);
@@ -202,7 +209,6 @@ test.describe('Story 2.3 - Error Banner Component', () => {
 			throw new Error('Could not get bounding boxes for layout assertion');
 		}
 
-		// Banner should be below input section and above todo list section
 		expect(bannerBox.y).toBeGreaterThan(inputBox.y);
 		expect(bannerBox.y).toBeLessThan(todoBox.y);
 	});
@@ -230,59 +236,14 @@ test.describe('Story 2.3 - Error Banner Component', () => {
 		const banner = errorBanner(page);
 		await expect(banner).toBeVisible({ timeout: 5000 });
 
-		// Should still be visible after 5 seconds
 		await page.waitForTimeout(5000);
 		await expect(banner).toBeVisible();
 
-		// Should be gone after 8+ seconds total (wait 4 more = 9 total)
 		await page.waitForTimeout(AUTO_DISMISS_MS - 5000 + 500);
 		await expect(banner).not.toBeVisible({ timeout: 3000 });
 	});
 
 	test('dismisses on successful action', async ({ page }) => {
-		let postCallCount = 0;
-
-		await page.route('**/api/todos', (route) => {
-			if (route.request().method() === 'POST') {
-				postCallCount++;
-				if (postCallCount === 1) {
-					route.fulfill({
-						status: 500,
-						body: JSON.stringify({
-							statusCode: 500,
-							error: 'Internal Server Error',
-							message: 'fail',
-						}),
-					});
-				} else {
-					route.continue();
-				}
-			} else {
-				route.continue();
-			}
-		});
-
-		const input = page.locator('[placeholder="Add a new task..."]');
-
-		// First attempt fails
-		await input.fill('Fail first');
-		await input.press('Enter');
-
-		const banner = errorBanner(page);
-		await expect(banner).toBeVisible({ timeout: 5000 });
-
-		// Second attempt succeeds — banner should dismiss
-		await input.fill(`Success ${Date.now()}`);
-		await input.press('Enter');
-
-		await expect(banner).not.toBeVisible({ timeout: 5000 });
-	});
-
-	test('new error replaces previous error (no stacking)', async ({ page }) => {
-		const todoText = `Replace err ${Date.now()}`;
-		await createTodo(page, todoText);
-
-		// First: fail a create
 		await page.route('**/api/todos', (route) => {
 			if (route.request().method() === 'POST') {
 				route.fulfill({
@@ -298,7 +259,43 @@ test.describe('Story 2.3 - Error Banner Component', () => {
 			}
 		});
 
-		// Also fail toggle
+		const input = page.locator('[placeholder="Add a new task..."]');
+		await input.fill('Fail first');
+		await input.press('Enter');
+
+		const banner = errorBanner(page);
+		await expect(banner).toBeVisible({ timeout: 5000 });
+
+		await page.unroute('**/api/todos');
+
+		const successText = `Success ${Date.now()}`;
+		tracker.track(successText);
+		await input.fill(successText);
+		await input.press('Enter');
+		await page.locator(`text=${successText}`).first().waitFor({ state: 'visible', timeout: 5000 });
+
+		await expect(banner).not.toBeVisible({ timeout: 5000 });
+	});
+
+	test('new error replaces previous error (no stacking)', async ({ page }) => {
+		const todoText = `Replace err ${Date.now()}`;
+		await createTodo(page, todoText);
+
+		await page.route('**/api/todos', (route) => {
+			if (route.request().method() === 'POST') {
+				route.fulfill({
+					status: 500,
+					body: JSON.stringify({
+						statusCode: 500,
+						error: 'Internal Server Error',
+						message: 'fail',
+					}),
+				});
+			} else {
+				route.continue();
+			}
+		});
+
 		await page.route('**/api/todos/**', (route) => {
 			if (route.request().method() === 'PATCH') {
 				route.fulfill({
@@ -322,14 +319,11 @@ test.describe('Story 2.3 - Error Banner Component', () => {
 		await expect(banner).toBeVisible({ timeout: 5000 });
 		await expect(banner).toContainText("Couldn't add that task");
 
-		// Now trigger a toggle error
 		const checkbox = todoCheckbox(page, todoText);
 		await checkbox.click();
 
-		// Banner should now show toggle error, not create error
 		await expect(banner).toContainText("Couldn't update that task — try again.");
 
-		// Only one banner should exist
 		const banners = page.locator('[data-testid="error-banner"]');
 		await expect(banners).toHaveCount(1);
 	});
@@ -358,7 +352,6 @@ test.describe('Story 2.3 - Error Banner Component', () => {
 
 		await expect(errorBanner(page)).toBeVisible({ timeout: 5000 });
 
-		// Input should still have the value so user can retry
 		await expect(input).toHaveValue(testValue);
 	});
 });

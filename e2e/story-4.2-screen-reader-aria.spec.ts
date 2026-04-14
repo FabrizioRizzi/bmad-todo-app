@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
 
+import { TodoTracker } from './fixtures/test-cleanup';
+
+const tracker = new TodoTracker();
+
 test.describe('Story 4.2 - Screen Reader Support & ARIA', () => {
 	function escapeRegExp(value: string) {
 		return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -17,11 +21,16 @@ test.describe('Story 4.2 - Screen Reader Support & ARIA', () => {
 		await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
 	});
 
+	test.afterEach(async ({ request }) => {
+		await tracker.cleanup(request);
+	});
+
 	async function createTodo(page: import('@playwright/test').Page, text: string) {
 		const input = page.locator('[placeholder="Add a new task..."]');
 		await input.fill(text);
 		await input.press('Enter');
 		await page.locator(`text=${text}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		tracker.track(text);
 	}
 
 	test('add button has aria-label "Add task"', async ({ page }) => {
@@ -118,11 +127,7 @@ test.describe('Story 4.2 - Screen Reader Support & ARIA', () => {
 
 	test('"Task added" announced in polite live region after create', async ({ page }) => {
 		const todoText = `ARIA announce ${Date.now()}`;
-		const input = page.locator('[placeholder="Add a new task..."]');
-		await input.fill(todoText);
-		await input.press('Enter');
-
-		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		await createTodo(page, todoText);
 
 		const createLiveRegion = page.locator('[data-testid="create-announcement"]');
 		await expect(createLiveRegion).toHaveText('Task added', { timeout: 5000 });

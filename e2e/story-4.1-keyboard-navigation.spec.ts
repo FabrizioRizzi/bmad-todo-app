@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
 
+import { TodoTracker } from './fixtures/test-cleanup';
+
+const tracker = new TodoTracker();
+
 test.describe('Story 4.1 - Keyboard navigation and focus', () => {
 	function escapeRegExp(value: string) {
 		return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -17,11 +21,16 @@ test.describe('Story 4.1 - Keyboard navigation and focus', () => {
 		await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
 	});
 
+	test.afterEach(async ({ request }) => {
+		await tracker.cleanup(request);
+	});
+
 	async function createTodo(page: import('@playwright/test').Page, text: string) {
 		const input = page.locator('[placeholder="Add a new task..."]');
 		await input.fill(text);
 		await input.press('Enter');
 		await page.locator(`text=${text}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		tracker.track(text);
 	}
 
 	test('Tab order from add field reaches filter tablist then sort controls', async ({ page }) => {

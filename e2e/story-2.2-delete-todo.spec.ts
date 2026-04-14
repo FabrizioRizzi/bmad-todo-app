@@ -1,10 +1,18 @@
 import { expect, test } from '@playwright/test';
 
+import { TodoTracker } from './fixtures/test-cleanup';
+
+const tracker = new TodoTracker();
+
 test.describe('Story 2.2 - Delete Todo with Undo', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
 		await page.waitForLoadState('domcontentloaded');
 		await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
+	});
+
+	test.afterEach(async ({ request }) => {
+		await tracker.cleanup(request);
 	});
 
 	function deleteButton(page: import('@playwright/test').Page, description: string) {
@@ -16,6 +24,7 @@ test.describe('Story 2.2 - Delete Todo with Undo', () => {
 		await input.fill(text);
 		await input.press('Enter');
 		await page.locator(`text=${text}`).first().waitFor({ state: 'visible', timeout: 5000 });
+		tracker.track(text);
 	}
 
 	test('delete button is visible on todo cards', async ({ page }) => {

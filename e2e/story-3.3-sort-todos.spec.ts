@@ -1,16 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-const API_BASE = 'http://localhost:3000';
+import { TodoTracker } from './fixtures/test-cleanup';
 
-/** Reset shared dev DB so list order and counts are deterministic. */
-async function clearAllTodos(request: import('@playwright/test').APIRequestContext) {
-	const listRes = await request.get(`${API_BASE}/api/todos`);
-	if (!listRes.ok()) return;
-	const todos = (await listRes.json()) as { id: string }[];
-	for (const t of todos) {
-		await request.delete(`${API_BASE}/api/todos/${t.id}`);
-	}
-}
+const API_BASE = 'http://localhost:3000';
+const tracker = new TodoTracker();
 
 function filterTab(page: import('@playwright/test').Page, label: 'All' | 'Active' | 'Completed') {
 	return page.getByRole('tab', { name: new RegExp(`^${label},`) });
@@ -36,7 +29,6 @@ async function todoDescriptionsInOrder(page: import('@playwright/test').Page): P
 	return out;
 }
 
-/** Preserve list order but keep only descriptions in `subset` (shared dev DB may contain other todos). */
 function orderSubset(fullOrder: string[], subset: readonly string[]): string[] {
 	const set = new Set(subset);
 	return fullOrder.filter((d) => set.has(d));
@@ -55,19 +47,24 @@ function todoCheckbox(page: import('@playwright/test').Page, description: string
 test.describe('Story 3.3 - Sort Todos', () => {
 	test.describe.configure({ mode: 'serial' });
 
-	test.beforeEach(async ({ page, request }) => {
-		await clearAllTodos(request);
+	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
 		await page.waitForLoadState('domcontentloaded');
 		await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
 	});
 
+	test.afterEach(async ({ request }) => {
+		await tracker.cleanup(request);
+	});
+
 	test('sort toolbar shows Sort by, Due (default pressed), and Status on All filter', async ({
 		page,
 	}) => {
+		const todoText = `placeholder ${Date.now()}`;
 		const input = page.locator('[placeholder="Add a new task..."]');
-		await input.fill(`placeholder ${Date.now()}`);
+		await input.fill(todoText);
 		await input.press('Enter');
+		tracker.track(todoText);
 		await page.locator('#todo-list').waitFor({ state: 'visible', timeout: 10000 });
 
 		const toolbar = page.getByRole('toolbar', { name: 'Sort options' });
@@ -88,17 +85,18 @@ test.describe('Story 3.3 - Sort Todos', () => {
 		const dEarly = `due-early-${ts}`;
 		const dNone = `due-none-${ts}`;
 
-		// Creation order differs from display order after sort
-		const r1 = await request.post(`${API_BASE}/api/todos`, {
+		await request.post(`${API_BASE}/api/todos`, {
 			data: { description: dLate, dueDate: '2026-12-31' },
 		});
-		const r2 = await request.post(`${API_BASE}/api/todos`, {
+		tracker.track(dLate);
+		await request.post(`${API_BASE}/api/todos`, {
 			data: { description: dEarly, dueDate: '2026-01-15' },
 		});
-		const r3 = await request.post(`${API_BASE}/api/todos`, {
+		tracker.track(dEarly);
+		await request.post(`${API_BASE}/api/todos`, {
 			data: { description: dNone },
 		});
-		expect(r1.ok() && r2.ok() && r3.ok()).toBeTruthy();
+		tracker.track(dNone);
 
 		await page.reload();
 		await page.waitForLoadState('domcontentloaded');
@@ -120,9 +118,11 @@ test.describe('Story 3.3 - Sort Todos', () => {
 		await request.post(`${API_BASE}/api/todos`, {
 			data: { description: a, dueDate: '2026-03-01' },
 		});
+		tracker.track(a);
 		await request.post(`${API_BASE}/api/todos`, {
 			data: { description: b, dueDate: '2026-09-01' },
 		});
+		tracker.track(b);
 
 		await page.reload();
 		await page.waitForLoadState('domcontentloaded');
@@ -152,6 +152,7 @@ test.describe('Story 3.3 - Sort Todos', () => {
 		for (const text of [first, second, third]) {
 			await input.fill(text);
 			await input.press('Enter');
+			tracker.track(text);
 			await page.locator(`text=${text}`).first().waitFor({ state: 'visible', timeout: 10000 });
 		}
 
@@ -178,10 +179,12 @@ test.describe('Story 3.3 - Sort Todos', () => {
 
 	test('Active and Completed filters hide Status sort; All shows it again', async ({ page }) => {
 		const ts = Date.now();
+		const todoText = `f-${ts}`;
 		const input = page.locator('[placeholder="Add a new task..."]');
-		await input.fill(`f-${ts}`);
+		await input.fill(todoText);
 		await input.press('Enter');
-		await page.locator(`text=f-${ts}`).first().waitFor({ state: 'visible', timeout: 10000 });
+		tracker.track(todoText);
+		await page.locator(`text=${todoText}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
 		await expect(statusSortButton(page)).toBeVisible();
 
@@ -206,9 +209,11 @@ test.describe('Story 3.3 - Sort Todos', () => {
 
 		await input.fill(first);
 		await input.press('Enter');
+		tracker.track(first);
 		await page.locator(`text=${first}`).first().waitFor({ state: 'visible', timeout: 10000 });
 		await input.fill(second);
 		await input.press('Enter');
+		tracker.track(second);
 		await page.locator(`text=${second}`).first().waitFor({ state: 'visible', timeout: 10000 });
 
 		await todoCheckbox(page, second).click();

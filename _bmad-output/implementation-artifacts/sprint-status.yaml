@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-07
-last_updated: 2026-04-14 (5-4 code review → done)
+last_updated: 2026-04-14 (epic-5 retrospective → done)
 project: bmad-todo-app
 # last_updated by: 5-1 code review → done
 project_key: NOKEY
@@ -75,9 +75,9 @@ development_status:
   epic-4-retrospective: done
 
   # Epic 5: Production Deployment
-  epic-5: in-progress
+  epic-5: done
   5-1-dockerize-frontend-and-backend: done
   5-2-docker-compose-and-data-persistence: done
   5-3-end-to-end-test-suite: done
   5-4-environment-config: done
-  epic-5-retrospective: optional
+  epic-5-retrospective: done

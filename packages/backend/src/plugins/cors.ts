@@ -13,7 +13,7 @@ export default fp(
 					return;
 				}
 				if (!origin) {
-					cb(null, true);
+					cb(null, false);
 					return;
 				}
 				cb(null, allowlist.includes(origin));

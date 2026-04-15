@@ -78,6 +78,43 @@ cp .env.example packages/backend/.env
 
 Default values work out of the box for local development with the Docker-managed database.
 
+The backend reads `packages/backend/.env`. In normal local development, keep both connection strings in that file:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/bmad_todo
+DATABASE_URL_TEST=postgresql://postgres:postgres@localhost:5433/bmad_todo_test
+PORT=3000
+NODE_ENV=development
+```
+
+Use them like this:
+
+- `DATABASE_URL` is the app's main database connection. `pnpm dev` expects this to point at the `dev` profile database on port `5432`.
+- `DATABASE_URL_TEST` is only for automated tests and backend integration test helpers. `pnpm test` and `pnpm --filter backend test` use the isolated test database on port `5433`.
+
+If you change `DATABASE_URL` to the test database on port `5433`, the app will run against test data instead of your normal dev data.
+
+### Switching between dev and test
+
+You usually do not need to edit `.env` when switching environments. Keep both URLs in place and switch by starting the matching Docker profile or script:
+
+```bash
+# Normal development
+pnpm dev
+
+# Start only the isolated test database
+pnpm compose:test:up
+
+# Run tests against the isolated test database
+pnpm test
+```
+
+Use these rules of thumb:
+
+- Working on the app locally: run `pnpm dev`. This starts the `dev` Docker profile and uses `DATABASE_URL`.
+- Running backend or integration tests: run `pnpm compose:test:up` once, then `pnpm test` or `pnpm --filter backend test`. These use `DATABASE_URL_TEST`.
+- Running the full production-like Docker stack: use `docker compose up --build`. This does not use the local `DATABASE_URL=localhost:...` value inside the backend container.
+
 ### 3. Start developing
 
 ```bash
@@ -132,7 +169,7 @@ You can also run Compose through the root scripts, for example `pnpm compose:up`
 
 - **Production** — `docker compose up` starts only the default services. The database has no host-exposed port; the backend connects over the internal Docker network.
 - **Dev** — The `dev-db-access` sidecar (alpine/socat) forwards host port 5432 to the internal `db` service so local tooling and the backend dev server can connect. `pnpm dev` activates this profile automatically.
-- **Test** — A separate `test-db` service runs `postgres:16-alpine` with simple credentials (`postgres`/`postgres`), database `bmad_todo_test`, an isolated `pgdata_test` volume, and host port 5433.
+- **Test** — A separate `test-db` service runs `postgres:16-alpine` with simple credentials (`postgres`/`postgres`), database `bmad_todo_test`, an isolated `pgdata_test` volume, and host port 5433. Keep this mapped to `DATABASE_URL_TEST`, not your normal `DATABASE_URL`.
 
 ## Docker Deployment
 
@@ -197,6 +234,17 @@ docker compose --profile test up -d test-db
 pnpm --filter backend test
 # Connect: psql -h localhost -p 5433 -U postgres -d bmad_todo_test
 ```
+
+Recommended `packages/backend/.env` layout for local work:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/bmad_todo
+DATABASE_URL_TEST=postgresql://postgres:postgres@localhost:5433/bmad_todo_test
+PORT=3000
+NODE_ENV=development
+```
+
+That lets you switch contexts with commands instead of rewriting env values.
 
 The test suite covers CRUD operations, filtering, sorting, due dates, error states, accessibility, and responsive behavior.
 

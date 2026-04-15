@@ -50,7 +50,7 @@ describe('FilterTabs', () => {
 	it('applies accent styling to the active tab', () => {
 		render(<FilterTabs activeFilter="completed" counts={defaultCounts} onFilterChange={vi.fn()} />);
 		const completedTab = screen.getByRole('tab', { name: /completed, 1 tasks/i });
-		expect(completedTab.className).toContain('text-[color:var(--accent)]');
+		expect(completedTab.className).toContain('text-[color:var(--accent-hover)]');
 		const allTab = screen.getByRole('tab', { name: /all, 3 tasks/i });
 		expect(allTab.className).toContain('text-[color:var(--text-secondary)]');
 	});

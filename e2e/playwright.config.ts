@@ -5,9 +5,10 @@ import { defineConfig, devices } from '@playwright/test';
 const isSandboxedBrowserPath =
 	process.env.PLAYWRIGHT_BROWSERS_PATH?.includes('cursor-sandbox-cache') ?? false;
 
+const desktopChrome = { ...devices['Desktop Chrome'] };
 const chromiumUse = isSandboxedBrowserPath
-	? { ...devices['Desktop Chrome'], channel: 'chrome' as const }
-	: { ...devices['Desktop Chrome'] };
+	? (({ channel: _channel, ...rest }) => rest)(desktopChrome)
+	: desktopChrome;
 
 export default defineConfig({
 	testDir: '.',

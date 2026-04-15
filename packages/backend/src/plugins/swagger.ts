@@ -2,6 +2,7 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import fp from 'fastify-plugin';
 import { jsonSchemaTransform } from 'fastify-type-provider-zod';
+import { env } from '../config/env.js';
 
 export default fp(
 	async (fastify) => {
@@ -16,9 +17,11 @@ export default fp(
 			transform: jsonSchemaTransform,
 		});
 
-		await fastify.register(swaggerUi, {
-			routePrefix: '/documentation',
-		});
+		if (env.enableDocumentation) {
+			await fastify.register(swaggerUi, {
+				routePrefix: '/documentation',
+			});
+		}
 	},
 	{ name: 'swagger' },
 );

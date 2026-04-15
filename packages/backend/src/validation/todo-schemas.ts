@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createTodoBodySchema = z.object({
-	description: z.string(),
+	description: z.string().max(1000),
 	isCompleted: z.boolean().optional().default(false),
 	dueDate: z.union([z.iso.date(), z.null()]).optional(),
 });

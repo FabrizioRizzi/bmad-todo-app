@@ -11,7 +11,7 @@ test.describe('WCAG AA Accessibility Audit', () => {
 	});
 
 	test.afterEach(async ({ request }) => {
-		await todoPage.cleanup(request);
+		await todoPage?.cleanup(request);
 	});
 
 	test('empty state passes axe-core WCAG AA', async ({ page }) => {
@@ -37,7 +37,9 @@ test.describe('WCAG AA Accessibility Audit', () => {
 
 	test('completed todo state passes axe-core WCAG AA', async ({ page }) => {
 		await todoPage.addTodo('Complete me for audit');
-		await todoPage.completeTodo(0);
+		const todos = await todoPage.getVisibleTodos();
+		const idx = todos.findIndex((t) => t.text === 'Complete me for audit');
+		await todoPage.completeTodo(idx);
 
 		const results = await new AxeBuilder({ page })
 			.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -50,7 +52,9 @@ test.describe('WCAG AA Accessibility Audit', () => {
 	test('filter views pass axe-core WCAG AA', async ({ page }) => {
 		await todoPage.addTodo('Filter audit active');
 		await todoPage.addTodo('Filter audit completed');
-		await todoPage.completeTodo(1);
+		const todos = await todoPage.getVisibleTodos();
+		const idx = todos.findIndex((t) => t.text === 'Filter audit completed');
+		await todoPage.completeTodo(idx);
 
 		for (const filter of ['Active', 'Completed', 'All'] as const) {
 			await todoPage.filterBy(filter);

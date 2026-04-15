@@ -10,7 +10,7 @@ export function AppHeader({ count }: AppHeaderProps) {
 			</h1>
 			<div
 				aria-label="Todo count"
-				className="rounded-[9999px] bg-[color:var(--accent-subtle)] px-[var(--space-3)] py-[var(--space-1)] text-[color:var(--accent)] text-[length:var(--text-xs)] leading-[var(--text-xs-leading)] [font-weight:var(--text-xs-weight)]"
+				className="rounded-[9999px] bg-[color:var(--accent-subtle)] px-[var(--space-3)] py-[var(--space-1)] text-[color:var(--accent-hover)] text-[length:var(--text-xs)] leading-[var(--text-xs-leading)] [font-weight:var(--text-xs-weight)]"
 				role="status"
 			>
 				{count} remaining

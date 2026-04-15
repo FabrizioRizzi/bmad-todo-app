@@ -40,7 +40,10 @@ export default fp(
 				return reply.status(400).send({
 					statusCode: 400,
 					error: 'Bad Request',
-					message: `Validation error: ${details.join('; ')}`,
+					message:
+						env.NODE_ENV === 'production'
+							? 'Request validation failed'
+							: `Validation error: ${details.join('; ')}`,
 				});
 			}
 

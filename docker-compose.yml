@@ -33,7 +33,7 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       PORT: ${PORT:-3000}
       NODE_ENV: ${NODE_ENV:-production}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost}
     secrets:
       - postgres_user
       - postgres_password
@@ -60,7 +60,7 @@ services:
         condition: service_healthy
     command: "tcp-listen:5432,fork,reuseaddr tcp-connect:db:5432"
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   test-db:
     image: postgres:16-alpine
@@ -72,7 +72,7 @@ services:
     volumes:
       - pgdata_test:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d bmad_todo_test"]
       interval: 5s
@@ -88,7 +88,7 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "${FRONTEND_PORT:-8080}:80"
+      - "${FRONTEND_PORT:-80}:8080"
 
 volumes:
   pgdata:

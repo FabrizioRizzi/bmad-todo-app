@@ -28,15 +28,19 @@ RUN pnpm install --frozen-lockfile --filter backend --prod --ignore-scripts
 FROM node:22-alpine
 WORKDIR /app
 
+RUN addgroup -S app && adduser -S -G app app
+
 COPY --from=prod-deps /app/node_modules/ node_modules/
 COPY --from=prod-deps /app/packages/backend/node_modules/ packages/backend/node_modules/
 COPY --from=build /app/packages/backend/dist/ packages/backend/dist/
 COPY packages/backend/drizzle.config.ts packages/backend/
 COPY packages/backend/src/schema/migrations/ packages/backend/src/schema/migrations/
 COPY packages/backend/docker-entrypoint.sh packages/backend/
-RUN chmod +x packages/backend/docker-entrypoint.sh
+RUN chmod +x packages/backend/docker-entrypoint.sh && chown -R app:app /app
 
 ENV NODE_ENV=production
 EXPOSE 3000
+
+USER app
 
 ENTRYPOINT ["packages/backend/docker-entrypoint.sh"]

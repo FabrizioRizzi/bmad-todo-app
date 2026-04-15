@@ -13,15 +13,15 @@
 	--background: #f5f0eb;
 	--surface: #fafaf7;
 	--text-primary: #2c2825;
-	--text-secondary: #8a8279;
-	--text-completed: #b5afa8;
+	--text-secondary: #6f665f;
+	--text-completed: #6f665f;
 	--accent: #c4654a;
-	--accent-hover: #a8523b;
+	--accent-hover: #954633;
 	--accent-subtle: #f5e6e1;
 	--border: #ddd6ce;
 	--border-focus: #c4654a;
 	--success: #6b8f71;
-	--error: #c45a4a;
+	--error: #9f3f34;
 	--error-bg: #f5e1df;
 	--active-bg: #fbf9f7;
 	--active-bar: #d9a193;
@@ -29,9 +29,9 @@
 	--completed-bar: #d4cec7;
 	--toast-bg: #3d3835;
 	--toast-text: #fafaf7;
-	--overdue: #c45a4a;
+	--overdue: #9f3f34;
 	--overdue-bg: #f9edeb;
-	--overdue-bar: #c45a4a;
+	--overdue-bar: #9f3f34;
 
 	/* Typography scale */
 	--text-xl: 1.5rem;
